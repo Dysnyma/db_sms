@@ -2,7 +2,7 @@
 import os
 import subprocess
 from datetime import datetime
-from core.utils import hr, render_menu
+from core.utils import hr, render_menu, show_table, cls, confirm
 
 
 def menu(conn):
@@ -14,6 +14,7 @@ def menu(conn):
         ('教师列表',     teacher_list),
         ('备份数据',     backup),
         ('恢复数据',     restore),
+        ('班级管理', class_menu),
     ]
     while True:
         if render_menu(conn, '教务管理员 [教务]', _items, 2) == 'quit':
@@ -147,3 +148,128 @@ def restore(conn):
         print(f'\n  ✅ 恢复成功！请重启程序')
     else:
         print(f'\n  ❌ 恢复失败: {r.stderr.strip()[:200]}')
+
+
+def class_menu(conn):
+    while True:
+        cls()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id,name,grade,major,
+                CASE status WHEN 1 THEN '在读' ELSE '毕业' END
+            FROM class AS c
+            WHERE c.is_deleted = 0
+            ORDER BY id
+        """)
+        rows = cur.fetchall()
+        headers = ['班级ID', '班级名', '年级', '专业', '状态']
+
+        show_table(headers, rows)
+        print('[A]新增  [E]修改  [D]删除  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'a':
+            class_add(conn)
+        elif c == 'e':
+            class_edit(conn)
+        elif c == 'd':
+            class_delete(conn)
+
+
+def class_add(conn):
+    cls()
+    print(' —— 新增班级 ——\n')
+    name = input(' 班级名：').strip()
+    if not name:
+        return
+
+    grade = input(' 年级（如2024）：').strip()
+    if not grade:
+        return
+
+    major = input(' 专业：').strip()
+    if not major:
+        return
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO class (name, grade, major) VALUES (%s, %s, %s)",
+                [name, grade, major])
+            conn.commit()
+        print(f'\n  ✅ 新增成功: {name}')
+    except Exception as e:
+        print(f'\n  ❌ 新增失败: {e}')
+    cls()
+
+
+def class_edit(conn):
+    cid = input('  要修改的班级ID: ').strip()
+    if not cid:
+        return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT name, grade, major, status FROM class WHERE id = %s AND is_deleted = 0", [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  班级不存在')
+        return
+
+    # 逐字段询问，回车保留原值
+    changes = {}
+    for label, col, old in [
+        ('班级名', 'name',  row[0]),
+        ('年级',   'grade', row[1]),
+        ('专业',   'major', row[2]),
+    ]:
+        val = input(f'  {label} [{old}]: ').strip()
+        if val and val != str(old):
+            changes[col] = val
+
+    s = input(f'  状态 [1=在读 0=毕业，当前:{row[3]}]: ').strip()
+    if s in ('0', '1') and int(s) != row[3]:
+        changes['status'] = int(s)
+
+    if not changes:
+        print('  没有改动')
+        return
+
+    print('\n  将修改:')
+    for k, v in changes.items():
+        print(f'    {k} → {v}')
+    if not confirm():
+        return
+
+    set_clause = ', '.join(f'{k}=%s' for k in changes)
+    cur.execute(f'UPDATE class SET {set_clause} WHERE id = %s',
+                list(changes.values()) + [cid])
+    conn.commit()
+    print('  ✅ 已修改')
+
+
+def class_delete(conn):
+    cid = input('  要删除的班级ID: ').strip()
+    if not cid:
+        return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT name FROM class WHERE id = %s AND is_deleted = 0", [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  班级不存在')
+        return
+
+    if confirm(f'确认删除「{row[0]}」？'):
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE class SET is_deleted = 1 WHERE id = %s", [cid])
+                conn.commit()
+            print(f'\n  ✅ 已删除: {row[0]}')
+        except Exception as e:
+            print(f'\n  ❌ 删除失败: {e}')

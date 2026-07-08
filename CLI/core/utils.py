@@ -63,3 +63,24 @@ def render_menu(conn, title, items, cols=2):
         return 'quit'
     items[c-1][1](conn)
     pause()
+
+
+def confirm(prompt='确认？'):
+    """回车/y->True，其他->False"""
+    return input(f' {prompt} (Y/n): ').strip().lower() in ('', 'y')
+
+
+def show_table(headers, rows):
+    """对齐打印表格，自动算列宽（兼容中文）"""
+    if not rows:
+        return
+    str_rows = [[str(v) if v is not None else '' for v in row] for row in rows]
+    widths = [max(_width(h), max(_width(r[i]) for r in str_rows))
+              for i, h in enumerate(headers)]
+
+    hr()
+    print('  ' + '  '.join(_pad(h, w) for h, w in zip(headers, widths)))
+    hr()
+    for row in str_rows:
+        print('  ' + '  '.join(_pad(v, w) for v, w in zip(row, widths)))
+    hr()
