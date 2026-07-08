@@ -1,0 +1,11 @@
+{
+    "[sql]": {
+        "editor.formatOnSave": false,
+        "editor.formatOnPaste": false,
+        "editor.formatOnType": false,
+        "editor.defaultFormatter": "adpyke.vscode-sql-formatter"
+    },
+    "sql-formatter.dialect": "mysql",
+    "sql-formatter.uppercase": true,
+    "sql-formatter.linesBetweenQueries": 2
+}
