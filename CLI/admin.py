@@ -15,6 +15,8 @@ def menu(conn):
         ('备份数据',     backup),
         ('恢复数据',     restore),
         ('班级管理', class_menu),
+        ('课程管理', course_menu),
+        ('教师管理', teacher_menu),
     ]
     while True:
         if render_menu(conn, '教务管理员 [教务]', _items, 2) == 'quit':
@@ -269,6 +271,251 @@ def class_delete(conn):
             with conn.cursor() as cur:
                 cur.execute(
                     "UPDATE class SET is_deleted = 1 WHERE id = %s", [cid])
+                conn.commit()
+            print(f'\n  ✅ 已删除: {row[0]}')
+        except Exception as e:
+            print(f'\n  ❌ 删除失败: {e}')
+
+
+def course_menu(conn):
+    while True:
+        cls()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id,name,credit,
+                CASE status WHEN 1 THEN '开课' ELSE '停开' END
+                ,create_time
+            FROM course AS c
+            WHERE c.is_deleted = 0
+            ORDER BY id
+        """)
+        rows = cur.fetchall()
+        headers = ['课程ID', '课程名', '学分', '状态', '创建时间']
+
+        show_table(headers, rows)
+        print('[A]新增  [E]修改  [D]删除  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'a':
+            course_add(conn)
+        elif c == 'e':
+            course_edit(conn)
+        elif c == 'd':
+            course_delete(conn)
+
+
+def course_add(conn):
+    cls()
+    print(' —— 新增课程 ——\n')
+    name = input(' 课程名：').strip()
+    if not name:
+        return
+
+    credit = input(' 学分（如3.0）：').strip()
+    if not credit:
+        return
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO course (name, credit) VALUES (%s, %s)",
+                [name, credit])
+            conn.commit()
+        print(f'\n  ✅ 新增成功: {name}')
+    except Exception as e:
+        print(f'\n  ❌ 新增失败: {e}')
+    cls()
+    return
+
+
+def course_edit(conn):
+    cid = input('  要修改的课程ID: ').strip()
+    if not cid:
+        return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT name, credit, status FROM course WHERE id = %s AND is_deleted = 0", [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  课程不存在')
+        return
+
+    changes = {}
+    for label, col, old in [
+        ('课程名', 'name',   row[0]),
+        ('学分',   'credit', row[1]),
+    ]:
+        val = input(f'  {label} [{old}]: ').strip()
+        if val and val != str(old):
+            changes[col] = val
+
+    s = input(f'  状态 [1=开课 0=停开，当前:{row[2]}]: ').strip()
+    if s in ('0', '1') and int(s) != row[2]:
+        changes['status'] = int(s)
+
+    if not changes:
+        print('  没有改动')
+        return
+
+    print('\n  将修改:')
+    for k, v in changes.items():
+        print(f'    {k} → {v}')
+    if not confirm():
+        return
+
+    set_clause = ', '.join(f'{k}=%s' for k in changes)
+    cur.execute(f'UPDATE course SET {set_clause} WHERE id = %s',
+                list(changes.values()) + [cid])
+    conn.commit()
+    print('  ✅ 已修改')
+
+
+def course_delete(conn):
+    cid = input('  要删除的课程ID: ').strip()
+    if not cid:
+        return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT name FROM course WHERE id = %s AND is_deleted = 0", [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  课程不存在')
+        return
+
+    if confirm(f'确认删除「{row[0]}」？'):
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE course SET is_deleted = 1 WHERE id = %s", [cid])
+                conn.commit()
+            print(f'\n  ✅ 已删除: {row[0]}')
+        except Exception as e:
+            print(f'\n  ❌ 删除失败: {e}')
+    return
+
+
+# ============================================================
+#  教师管理
+# ============================================================
+
+def teacher_menu(conn):
+    while True:
+        cls()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, name, no, IFNULL(title, '-'), IFNULL(phone, '-'),
+                   CASE status WHEN 1 THEN '在职' ELSE '离职' END
+            FROM teacher
+            WHERE is_deleted = 0
+            ORDER BY no
+        """)
+        rows = cur.fetchall()
+        show_table(['教师ID', '姓名', '工号', '职称', '电话', '状态'], rows)
+        print('  [A]新增  [E]修改  [D]删除  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'a':
+            teacher_add(conn)
+        elif c == 'e':
+            teacher_edit(conn)
+        elif c == 'd':
+            teacher_delete(conn)
+
+
+def teacher_add(conn):
+    cls()
+    print(' —— 新增教师 ——\n')
+    name = input(' 姓名：').strip()
+    if not name:
+        return
+    no = input(' 工号：').strip()
+    if not no:
+        return
+    title = input(' 职称（回车跳过）：').strip() or None
+    phone = input(' 电话（回车跳过）：').strip() or None
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO teacher (name, no, title, phone) VALUES (%s, %s, %s, %s)",
+                [name, no, title, phone])
+            conn.commit()
+        print(f'\n  ✅ 新增成功: {name}')
+    except Exception as e:
+        print(f'\n  ❌ 新增失败: {e}')
+
+
+def teacher_edit(conn):
+    cid = input('  要修改的教师ID: ').strip()
+    if not cid:
+        return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT name, no, title, phone, status FROM teacher WHERE id = %s AND is_deleted = 0", [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  教师不存在')
+        return
+
+    changes = {}
+    for label, col, old in [
+        ('姓名', 'name',  row[0]),
+        ('工号', 'no',    row[1]),
+        ('职称', 'title', row[2] or ''),
+        ('电话', 'phone', row[3] or ''),
+    ]:
+        val = input(f'  {label} [{old}]: ').strip()
+        if val and val != str(old):
+            changes[col] = val
+
+    s = input(f'  状态 [1=在职 0=离职，当前:{row[4]}]: ').strip()
+    if s in ('0', '1') and int(s) != row[4]:
+        changes['status'] = int(s)
+
+    if not changes:
+        print('  没有改动')
+        return
+
+    print('\n  将修改:')
+    for k, v in changes.items():
+        print(f'    {k} → {v}')
+    if not confirm():
+        return
+
+    set_clause = ', '.join(f'{k}=%s' for k in changes)
+    cur.execute(f'UPDATE teacher SET {set_clause} WHERE id = %s',
+                list(changes.values()) + [cid])
+    conn.commit()
+    print('  ✅ 已修改')
+
+
+def teacher_delete(conn):
+    cid = input('  要删除的教师ID: ').strip()
+    if not cid:
+        return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT name FROM teacher WHERE id = %s AND is_deleted = 0", [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  教师不存在')
+        return
+
+    if confirm(f'确认删除「{row[0]}」？'):
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE teacher SET is_deleted = 1 WHERE id = %s", [cid])
                 conn.commit()
             print(f'\n  ✅ 已删除: {row[0]}')
         except Exception as e:
