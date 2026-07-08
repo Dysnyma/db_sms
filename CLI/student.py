@@ -1,38 +1,21 @@
 """学生功能"""
-from core.utils import cls, pause, hr, input_choice
+from core.utils import cls, pause, hr, input_choice, render_menu
 
 
 def menu(conn, sid, sname, sno):
+    # lambda c: xxx(c, sno) 的意思是：
+    # "包装一个只收 c(onn) 的函数，内部调用 xxx(c, sno)"
+    # 这样 render_menu 统一传 func(conn) 时，sno 已经被填好了
+    _items = [
+        ('查询可选课程', lambda c: show_courses(c, sno)),
+        ('选课',         lambda c: enroll(c, sno)),
+        ('退选',         lambda c: unenroll(c, sno)),
+        ('查看我的成绩', lambda c: my_grades(c, sid, sname)),
+        ('查看学期均分', lambda c: semester_avg(c, sno)),
+    ]
     while True:
-        cls()
-        hr()
-        print(f'  {sname} 同学 [学生]')
-        hr()
-        print('  1. 查询可选课程')
-        print('  2. 选课')
-        print('  3. 退选')
-        print('  4. 查看我的成绩')
-        print('  5. 查看学期均分')
-        print('  0. 退出登录')
-        hr()
-        c = input_choice('  请选择: ')
-        if c == 0:
+        if render_menu(conn, f'{sname} 同学 [学生]', _items) == 'quit':
             break
-        elif c == 1:
-            show_courses(conn, sno)
-            pause()
-        elif c == 2:
-            enroll(conn, sno)
-            pause()
-        elif c == 3:
-            unenroll(conn, sno)
-            pause()
-        elif c == 4:
-            my_grades(conn, sid, sname)
-            pause()
-        elif c == 5:
-            semester_avg(conn, sno)
-            pause()
 
 
 def show_courses(conn, sno):

@@ -1,32 +1,18 @@
 """教师功能"""
 import csv
 import os
-from core.utils import cls, pause, hr, input_choice
+from core.utils import cls, pause, hr, input_choice, render_menu
 
 
 def menu(conn, tid, tname, tno):
+    _items = [
+        ('录入成绩',           lambda c: grade_input(c, tno)),
+        ('批量录入 (CSV)',     lambda c: batch_grade_input(c, tno)),
+        ('查看我的课程学生',   lambda c: my_students(c, tid, tname)),
+    ]
     while True:
-        cls()
-        hr()
-        print(f'  {tname} 老师 [教师]')
-        hr()
-        print('  1. 录入成绩')
-        print('  2. 批量录入 (CSV)')
-        print('  3. 查看我的课程学生')
-        print('  0. 退出登录')
-        hr()
-        c = input_choice('  请选择: ')
-        if c == 0:
+        if render_menu(conn, f'{tname} 老师 [教师]', _items) == 'quit':
             break
-        elif c == 1:
-            grade_input(conn, tno)
-            pause()
-        elif c == 2:
-            batch_grade_input(conn, tno)
-            pause()
-        elif c == 3:
-            my_students(conn, tid, tname)
-            pause()
 
 
 def grade_input(conn, tno):

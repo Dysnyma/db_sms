@@ -2,45 +2,22 @@
 import os
 import subprocess
 from datetime import datetime
-from core.utils import cls, pause, hr, input_choice
+from core.utils import hr, render_menu
 
 
 def menu(conn):
+    _items = [
+        ('数据概览',     summary),
+        ('班级学生名单', roster),
+        ('班级成绩统计', class_report),
+        ('教师信息',     teacher_info),
+        ('教师列表',     teacher_list),
+        ('备份数据',     backup),
+        ('恢复数据',     restore),
+    ]
     while True:
-        cls()
-        hr()
-        print(f'  教务管理员 [教务]')
-        hr()
-        print('  1. 数据概览       4. 教师信息')
-        print('  2. 班级学生名单    5. 教师列表')
-        print('  3. 班级成绩统计    6. 备份数据')
-        print('                    7. 恢复数据')
-        print('  0. 退出登录')
-        hr()
-        c = input_choice('  请选择: ')
-        if c == 0:
+        if render_menu(conn, '教务管理员 [教务]', _items, 2) == 'quit':
             break
-        elif c == 1:
-            summary(conn)
-            pause()
-        elif c == 2:
-            roster(conn)
-            pause()
-        elif c == 3:
-            class_report(conn)
-            pause()
-        elif c == 4:
-            teacher_info(conn)
-            pause()
-        elif c == 5:
-            teacher_list(conn)
-            pause()
-        elif c == 6:
-            backup(conn)
-            pause()
-        elif c == 7:
-            restore(conn)
-            pause()
 
 
 def summary(conn):
