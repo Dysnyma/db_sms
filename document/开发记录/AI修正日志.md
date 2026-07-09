@@ -27,5 +27,8 @@
 | 2026-07-09 | 恢复用 `DROP DATABASE` 失败后数据库残废 | 改用 `SET FOREIGN_KEY_CHECKS=0` 包裹 SQL，不删库 |
 | 2026-07-09 | 备份缺存储过程和触发器 | 加 `--routines --triggers --add-drop-table` |
 | 2026-07-09 | `@st.cache_resource` 缓存连接超时报 `InterfaceError` | 回退，不缓存数据库连接 |
+| 2026-07-09 | `st.form` + 动态 key 导致修改表单预填值不更新、保存按钮无效 | 全部改为 `st.button`，widget key 绑定 ID（如 `key=f'ce_name_{class_id}'`），选不同项自动刷新 |
+| 2026-07-09 | `st.rerun()` 导致 `st.success` 消息消失 | 改用 `st.toast` 弹窗通知，右上角短暂显示不依赖页面渲染 |
+| 2026-07-09 | 多次脚本修复缩进导致额外语法错误 | 最终用 Python 逐行扫描+精确替换，编译通过 |
 | 2026-07-08          | selectbox 用 lambda + next 遍历，代码又绕又慢                                            | 改用字典 `{label: id}` 映射，一行搞定                                                      |
 | 2026-07-08          | my_grades/semester_avg 没有返回数据模式                                                  | 加 `paged` 参数，`paged=False` 返回原始数据供 Streamlit 用                                 |
