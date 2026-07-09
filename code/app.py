@@ -586,9 +586,18 @@ def offering_manage_page(conn):
         sem_options = [f'{y}-{y+1}-{s}' for y in range(this_year - 3, this_year + 2) for s in (1, 2)]
         sem = st.selectbox('学期', sem_options, key='oa_sem')
         max_s = st.number_input('上限', min_value=1, value=30, key='oa_max')
-        start = st.date_input('选课开始', key='oa_start')
-        end = st.date_input('选课截止', key='oa_end')
-        deadline = st.date_input('成绩截止', key='oa_deadline')
+        st.caption('选课开始')
+        c1, c2 = st.columns([3, 1])
+        start_date = c1.date_input('日期', key='oa_start_date', label_visibility='collapsed')
+        start_time = c2.text_input('时间', value='00:00', key='oa_start_time', label_visibility='collapsed')
+        st.caption('选课截止')
+        c1, c2 = st.columns([3, 1])
+        end_date = c1.date_input('日期', key='oa_end_date', label_visibility='collapsed')
+        end_time = c2.text_input('时间', value='23:59', key='oa_end_time', label_visibility='collapsed')
+        st.caption('成绩截止')
+        c1, c2 = st.columns([3, 1])
+        dl_date = c1.date_input('日期', key='oa_deadline_date', label_visibility='collapsed')
+        dl_time = c2.text_input('时间', value='23:59', key='oa_deadline_time', label_visibility='collapsed')
         if st.button('新增排课', key='btn_oa'):
             if not teachers:
                 st.error('该课程暂无能上的教师，请重新选择课程')
@@ -600,10 +609,15 @@ def offering_manage_page(conn):
                          enroll_start_time,enroll_end_time,grade_deadline)
                         VALUES (%s,%s,%s,%s,%s,%s,%s)""",
                                 [course_id, tlmap[tid], sem, max_s,
-                                 str(start), str(end), str(deadline)])
+                                 f'{start_date} {start_time}:00',
+                                 f'{end_date} {end_time}:00',
+                                 f'{dl_date} {dl_time}:00'])
                     conn.commit()
                     st.session_state.msg = ('success', '新增成功')
-                    for k in ['oa_course', 'oa_teacher', 'oa_sem', 'oa_max', 'oa_start', 'oa_end', 'oa_deadline']:
+                    for k in ['oa_course', 'oa_teacher', 'oa_sem', 'oa_max',
+                              'oa_start_date', 'oa_start_time',
+                              'oa_end_date', 'oa_end_time',
+                              'oa_deadline_date', 'oa_deadline_time']:
                         st.session_state.pop(k, None)
                     st.rerun()
                 except Exception as e:
@@ -625,19 +639,35 @@ def offering_manage_page(conn):
             new_sem = st.selectbox('学期', sem_opts,
                                    index=sem_opts.index(cur_sem), key=f'oe_sem_{oid}')
             new_max = st.number_input('上限', min_value=1, value=int(row[1]), key=f'oe_max_{oid}')
-            new_start = st.date_input('选课开始', value=datetime.strptime(str(row[2])[:10], '%Y-%m-%d').date(),
-                                      key=f'oe_start_{oid}')
-            new_end = st.date_input('选课截止', value=datetime.strptime(str(row[3])[:10], '%Y-%m-%d').date(),
-                                    key=f'oe_end_{oid}')
-            new_dl = st.date_input('成绩截止', value=datetime.strptime(str(row[4])[:10], '%Y-%m-%d').date(),
-                                   key=f'oe_deadline_{oid}')
+            # 日期+时间 拆分
+            s_d, s_t = str(row[2])[:10], str(row[2])[11:16]
+            e_d, e_t = str(row[3])[:10], str(row[3])[11:16]
+            d_d, d_t = str(row[4])[:10], str(row[4])[11:16]
+            st.caption('选课开始')
+            c1, c2 = st.columns([3, 1])
+            new_sd = c1.date_input('日期', value=datetime.strptime(s_d, '%Y-%m-%d').date(),
+                                   key=f'oe_start_date_{oid}', label_visibility='collapsed')
+            new_st = c2.text_input('时间', value=s_t, key=f'oe_start_time_{oid}', label_visibility='collapsed')
+            st.caption('选课截止')
+            c1, c2 = st.columns([3, 1])
+            new_ed = c1.date_input('日期', value=datetime.strptime(e_d, '%Y-%m-%d').date(),
+                                   key=f'oe_end_date_{oid}', label_visibility='collapsed')
+            new_et = c2.text_input('时间', value=e_t, key=f'oe_end_time_{oid}', label_visibility='collapsed')
+            st.caption('成绩截止')
+            c1, c2 = st.columns([3, 1])
+            new_dd = c1.date_input('日期', value=datetime.strptime(d_d, '%Y-%m-%d').date(),
+                                   key=f'oe_deadline_date_{oid}', label_visibility='collapsed')
+            new_dt = c2.text_input('时间', value=d_t, key=f'oe_deadline_time_{oid}', label_visibility='collapsed')
             if st.button('保存修改', key=f'save_offering_{oid}'):
                 try:
                     cur = conn.cursor()
                     cur.execute("""UPDATE course_offering
                         SET semester=%s,max_students=%s,enroll_start_time=%s,
                         enroll_end_time=%s,grade_deadline=%s WHERE id=%s""",
-                                [new_sem, new_max, str(new_start), str(new_end), str(new_dl), oid])
+                                [new_sem, new_max,
+                                 f'{new_sd} {new_st}:00',
+                                 f'{new_ed} {new_et}:00',
+                                 f'{new_dd} {new_dt}:00', oid])
                     conn.commit()
                     st.session_state.msg = ('success', '修改成功')
                     st.rerun()
