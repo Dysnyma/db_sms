@@ -27,7 +27,7 @@ def menu(conn):
             break
 
 
-def summary(conn):
+def summary(conn, paged=True):
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM class WHERE is_deleted = 0")
     c1 = cur.fetchone()[0]
@@ -41,6 +41,8 @@ def summary(conn):
     c5 = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM enrollment WHERE is_deleted = 0")
     c6 = cur.fetchone()[0]
+    if (paged == False):
+        return {'班级': c1,   '学生': c2,   '课程': c3,  '教师': c4, '排课': c5, '选课记录': c6}
     hr()
     print(f'  班级: {c1}    学生: {c2}    课程: {c3}    教师: {c4}')
     print(f'  排课: {c5}    选课记录: {c6}')
@@ -1021,3 +1023,151 @@ def class_grade_roster(conn):
             pager.next()
         elif c == 'p':
             pager.prev()
+
+
+# ============================================================
+#  Streamlit 辅助函数
+# ============================================================
+
+def class_list(conn):
+    """返回全部班级列表"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, name, grade, major,
+               CASE status WHEN 1 THEN '在读' ELSE '毕业' END
+        FROM class WHERE is_deleted = 0 ORDER BY id
+    """)
+    return cur.fetchall()
+
+
+def roster_data(conn, class_id):
+    """返回某班级的学生名单"""
+    cur = conn.cursor()
+    cur.callproc('sp_student_roster', [class_id])
+    rows = cur.fetchall()
+    cur.nextset()
+    return rows
+
+
+def course_list(conn):
+    """返回全部课程列表"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, name, credit,
+               CASE status WHEN 1 THEN '开课' ELSE '停开' END
+        FROM course WHERE is_deleted = 0 ORDER BY id
+    """)
+    return cur.fetchall()
+
+
+def class_report_data(conn, class_id, course_id):
+    """返回某班级某课程的成绩统计"""
+    cur = conn.cursor()
+    cur.callproc('sp_class_grade_report', [class_id, course_id])
+    rows = cur.fetchall()
+    cur.nextset()
+    return rows
+
+
+def grade_roster_data(conn, class_id):
+    """返回某班级每人每课的成绩明细"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.name, s.no, c.name, t.name, co.semester,
+               IFNULL(e.score, '未录入')
+        FROM enrollment e
+        JOIN student s ON e.student_id = s.id
+        JOIN course_offering co ON e.offering_id = co.id
+        JOIN course c ON co.course_id = c.id
+        JOIN teacher t ON co.teacher_id = t.id
+        WHERE s.class_id = %s AND e.is_deleted = 0
+        ORDER BY s.no, co.semester, c.name
+    """, [class_id])
+    return cur.fetchall()
+
+
+def teacher_info_data(conn, tno):
+    """返回单个教师信息及授课统计"""
+    cur = conn.cursor()
+    cur.callproc('sp_teacher_info', [tno])
+    rows = cur.fetchall()
+    cur.nextset()
+    return rows
+
+
+def teacher_list_data(conn):
+    """返回全部教师列表及授课统计"""
+    cur = conn.cursor()
+    cur.callproc('sp_teacher_list')
+    rows = cur.fetchall()
+    cur.nextset()
+    return rows
+
+
+def teacher_full_list(conn):
+    """返回全部教师（id, name, no, title, phone, status）"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, name, no, IFNULL(title,''), IFNULL(phone,''),
+               CASE status WHEN 1 THEN '在职' ELSE '离职' END
+        FROM teacher WHERE is_deleted = 0 ORDER BY no
+    """)
+    return cur.fetchall()
+
+
+def student_full_list(conn):
+    """返回全部学生（id, name, no, class_id, status + class名）"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.id, s.name, s.no, s.class_id, c.name,
+               CASE s.status WHEN 1 THEN '在读' ELSE '离校' END
+        FROM student s JOIN class c ON s.class_id = c.id
+        WHERE s.is_deleted = 0 ORDER BY s.no
+    """)
+    return cur.fetchall()
+
+
+def offering_full_list(conn):
+    """返回全部排课（id, course, teacher, semester, cur/max, status）"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT co.id, c.name, t.name, co.semester,
+               co.current_students, co.max_students,
+               CASE co.status WHEN 1 THEN '有效' ELSE '取消' END,
+               co.course_id, co.teacher_id
+        FROM course_offering co
+        JOIN course c ON co.course_id = c.id
+        JOIN teacher t ON co.teacher_id = t.id
+        WHERE co.is_deleted = 0
+        ORDER BY co.semester DESC, c.name
+    """)
+    return cur.fetchall()
+
+
+def teacher_course_teachers(conn, course_id):
+    """返回能教某课程的教师列表"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT t.id, t.name, IFNULL(t.title,'')
+        FROM teacher t
+        JOIN teacher_course tc ON t.id = tc.teacher_id
+        WHERE tc.course_id = %s AND t.is_deleted = 0
+    """, [course_id])
+    return cur.fetchall()
+
+
+def enrollment_list(conn):
+    """返回全部选课记录"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT e.id, s.name, s.no, c.name, t.name, co.semester,
+               IFNULL(e.score, '未录入')
+        FROM enrollment e
+        JOIN student s ON e.student_id = s.id
+        JOIN course_offering co ON e.offering_id = co.id
+        JOIN course c ON co.course_id = c.id
+        JOIN teacher t ON co.teacher_id = t.id
+        WHERE e.is_deleted = 0
+        ORDER BY co.semester DESC, s.no
+    """)
+    return cur.fetchall()
