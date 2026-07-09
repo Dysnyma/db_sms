@@ -15,3 +15,5 @@
 | 2026-07-09 | 教师管理新增后清除 ca_name 等班级 key（复制粘贴） | 改为 ta_name/ta_no/ta_title/ta_phone |
 | 2026-07-09 | 学生管理新增后清除 coa_name 等课程 key（复制粘贴） | 改为 sa_name/sa_no/sa_class |
 | 2026-07-09 | 排课管理删除末尾双重 st.rerun() | 删除多余的死代码 |
+| 2026-07-09 | grade_input / batch_grade / enrollment 用 st.success+rerun 导致消息丢失 | 统一改为 session_state.msg 模式 |
+| 2026-07-09 | enrollment_manage 字典构建两次 | 提取为 emap 变量 |
