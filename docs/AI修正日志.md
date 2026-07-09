@@ -24,3 +24,5 @@
 | 2026-07-09 | 排课新增课程+教师改成 text_input 无法使用（不知道有哪些课程/教师） | 改回 selectbox |
 | 2026-07-09 | 排课日期字段手打 "1" 导致 MySQL 1292 datetime 报错 | 改为 date_input 日历选择器 |
 | 2026-07-09 | 退出登录后侧边栏残留旧导航 | st.navigation 改为始终调用，登录态切换正常 |
+| 2026-07-09 | 数据恢复 st.file_uploader 在 button 点击重跑时丢失文件状态 | 改为 session_state 持久化上传内容 |
+| 2026-07-09 | 数据恢复 subprocess.run text=True 在中文 Windows 用 gbk 编码 stdin，UTF-8 SQL 含 gbk 不能表示的字符 | 加 encoding='utf-8'（app.py + admin.py 两处） |

@@ -278,19 +278,27 @@ def backup_page(conn):
 
 def restore_page(conn):
     file = st.file_uploader('选择备份文件 (.sql)', type='sql')
-    if not file:
+
+    # 上传文件后立即保存到 session_state，防止 button 点击重跑时丢失
+    if file is not None:
+        st.session_state['_restore_sql_bytes'] = file.getvalue()
+
+    if '_restore_sql_bytes' not in st.session_state:
+        st.info('请上传一个 .sql 备份文件')
         return
-    if st.button('确认恢复（覆盖当前数据！）'):
+
+    if st.button('确认恢复（覆盖当前数据！）', type='primary'):
         content = ('SET FOREIGN_KEY_CHECKS=0;\n'
-                   + file.read().decode('utf-8')
+                   + st.session_state['_restore_sql_bytes'].decode('utf-8')
                    + '\nSET FOREIGN_KEY_CHECKS=1;')
         r = subprocess.run(
             ['mysql', '-u', 'root', '--default-character-set=utf8mb4'],
-            input=content, capture_output=True, text=True)
+            input=content, capture_output=True, text=True, encoding='utf-8')
         if r.returncode == 0:
             st.success('恢复成功！请重启应用')
+            del st.session_state['_restore_sql_bytes']
         else:
-            st.error(r.stderr[:200])
+            st.error(r.stderr.strip() or '恢复失败，请检查备份文件是否完整')
 
 
 # ---- 管理类页面 ----

@@ -171,7 +171,7 @@ def restore(conn):
         content = 'SET FOREIGN_KEY_CHECKS=0;\n' + f.read() + '\nSET FOREIGN_KEY_CHECKS=1;'
     r = subprocess.run(
         ['mysql', '-u', 'root', '--default-character-set=utf8mb4'],
-        input=content, capture_output=True, text=True
+        input=content, capture_output=True, text=True, encoding='utf-8'
     )
     if r.returncode == 0:
         print(f'\n  ✅ 恢复成功！请重启程序')
