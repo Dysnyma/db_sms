@@ -1,4 +1,5 @@
 import streamlit as st
+st.set_page_config(page_title='学生成绩管理系统', page_icon='🎓', layout='wide')
 from core.config import connect
 from student import show_courses, my_grades, semester_avg, enrolled_courses
 from teacher import teacher_offerings, offering_students
@@ -11,7 +12,6 @@ import os
 import subprocess
 from datetime import datetime
 import pandas as pd
-st.title('学生成绩管理系统')
 
 
 def show_courses_page(conn, sno):
@@ -686,25 +686,24 @@ def offering_manage_page(conn):
             st.rerun()
 
 
-# 初始化
-if 'user' not in st.session_state:
-    st.session_state.user = None
+def _make_page(fn, *args):
+    """创建带数据库连接的导航页面包装器"""
+    def wrapper():
+        conn = connect()
+        try:
+            fn(conn, *args)
+        finally:
+            conn.close()
+    wrapper.__name__ = fn.__name__
+    return wrapper
 
-# 已登录 → 显示内容
-if st.session_state.user:
-    role, uid, uname, uno = st.session_state.user
-    st.success(f'欢迎，{uname} [{role}]')
-    if st.button('退出登录'):
-        st.session_state.user = None
-        st.rerun()
 
-# 未登录 → 显示登录表单
-else:
-    user_input = st.text_input('请输入学号/工号 (教务输入 admin)')
+def _login_page():
+    st.title('学生成绩管理系统')
+    user_input = st.text_input('请输入学号/工号（教务输入 admin）')
     if st.button('登录'):
         conn = connect()
         cur = conn.cursor()
-        # 复刻 auth.py 的登录逻辑
         if user_input == 'admin':
             st.session_state.user = ('admin', 0, '教务管理员', 'admin')
         else:
@@ -727,74 +726,64 @@ else:
         if st.session_state.user:
             st.rerun()
 
-if st.session_state.user:
+
+# 初始化
+if 'user' not in st.session_state:
+    st.session_state.user = None
+
+if not st.session_state.user:
+    _login_page()
+
+else:
     role, uid, uname, uno = st.session_state.user
 
-    # 侧边栏 —— 菜单 + 身份
     with st.sidebar:
         st.write(f'欢迎，{uname}')
         st.caption(f'角色：{role}')
 
-        if role == 'student':
-            page = st.radio('菜单', ['可选课程', '选课', '退选', '我的成绩', '学期均分'])
-        elif role == 'teacher':
-            page = st.radio('菜单', ['录入成绩', '批量录入CSV', '查看课程学生'])
-        elif role == 'admin':
-            page = st.radio('菜单', [
-                '数据概览', '班级学生名单', '班级成绩统计', '班级成绩明细',
-                '教师信息', '教师列表',
-                '备份数据', '恢复数据',
-                '班级管理', '课程管理', '教师管理', '学生管理', '排课管理', '选课管理',
-            ])
+    if role == 'student':
+        pages = [
+            st.Page(_make_page(show_courses_page, uno), title='可选课程', icon='📚'),
+            st.Page(_make_page(enroll_page, uno), title='选课', icon='✏️'),
+            st.Page(_make_page(unenroll_page, uno), title='退选', icon='↩️'),
+            st.Page(_make_page(my_grades_page, uid, uname), title='我的成绩', icon='📊'),
+            st.Page(_make_page(semester_avg_page, uno), title='学期均分', icon='📈'),
+        ]
+    elif role == 'teacher':
+        pages = [
+            st.Page(_make_page(grade_input_page, uno), title='录入成绩', icon='📝'),
+            st.Page(_make_page(batch_grade_page, uno), title='批量录入CSV', icon='📂'),
+            st.Page(_make_page(my_students_page, uno), title='查看课程学生', icon='👥'),
+        ]
+    elif role == 'admin':
+        pages = {
+            '📊 数据查看': [
+                st.Page(_make_page(summary_page), title='数据概览', icon='📋'),
+                st.Page(_make_page(roster_page), title='班级学生名单', icon='📄'),
+                st.Page(_make_page(class_report_page), title='班级成绩统计', icon='📈'),
+                st.Page(_make_page(class_grade_roster_page), title='班级成绩明细', icon='📑'),
+                st.Page(_make_page(teacher_info_page), title='教师信息', icon='👤'),
+                st.Page(_make_page(teacher_list_page), title='教师列表', icon='📜'),
+            ],
+            '🔧 数据管理': [
+                st.Page(_make_page(class_manage_page), title='班级管理', icon='🏫'),
+                st.Page(_make_page(course_manage_page), title='课程管理', icon='📖'),
+                st.Page(_make_page(teacher_manage_page), title='教师管理', icon='👨‍🏫'),
+                st.Page(_make_page(student_manage_page), title='学生管理', icon='👨‍🎓'),
+                st.Page(_make_page(offering_manage_page), title='排课管理', icon='📅'),
+                st.Page(_make_page(enrollment_manage_page), title='选课管理', icon='📝'),
+            ],
+            '💾 系统工具': [
+                st.Page(_make_page(backup_page), title='备份数据', icon='💾'),
+                st.Page(_make_page(restore_page), title='恢复数据', icon='🔄'),
+            ],
+        }
 
-        if st.button('退出登录'):
+    pg = st.navigation(pages)
+    pg.run()
+
+    with st.sidebar:
+        st.divider()
+        if st.button('🚪 退出登录'):
             st.session_state.user = None
             st.rerun()
-
-    # 主区域 —— 根据菜单显示对应内容
-    conn = connect()
-    if role == 'student' and page == '可选课程':
-        show_courses_page(conn, uno)
-    elif role == 'student' and page == '我的成绩':
-        my_grades_page(conn, uid, uname)
-    elif role == 'student' and page == '选课':
-        enroll_page(conn, uno)
-    elif role == 'student' and page == '退选':
-        unenroll_page(conn, uno)
-    elif role == 'student' and page == '学期均分':
-        semester_avg_page(conn, uno)
-    elif role == 'teacher' and page == '录入成绩':
-        grade_input_page(conn, uno)
-    elif role == 'teacher' and page == '批量录入CSV':
-        batch_grade_page(conn, uno)
-    elif role == 'teacher' and page == '查看课程学生':
-        my_students_page(conn, uno)
-    elif role == 'admin' and page == '数据概览':
-        summary_page(conn)
-    elif role == 'admin' and page == '班级学生名单':
-        roster_page(conn)
-    elif role == 'admin' and page == '班级成绩统计':
-        class_report_page(conn)
-    elif role == 'admin' and page == '班级成绩明细':
-        class_grade_roster_page(conn)
-    elif role == 'admin' and page == '教师信息':
-        teacher_info_page(conn)
-    elif role == 'admin' and page == '教师列表':
-        teacher_list_page(conn)
-    elif role == 'admin' and page == '备份数据':
-        backup_page(conn)
-    elif role == 'admin' and page == '恢复数据':
-        restore_page(conn)
-    elif role == 'admin' and page == '班级管理':
-        class_manage_page(conn)
-    elif role == 'admin' and page == '课程管理':
-        course_manage_page(conn)
-    elif role == 'admin' and page == '选课管理':
-        enrollment_manage_page(conn)
-    elif role == 'admin' and page == '教师管理':
-        teacher_manage_page(conn)
-    elif role == 'admin' and page == '学生管理':
-        student_manage_page(conn)
-    elif role == 'admin' and page == '排课管理':
-        offering_manage_page(conn)
-    conn.close()
