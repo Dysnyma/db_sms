@@ -2,7 +2,7 @@
 import os
 import subprocess
 from datetime import datetime
-from CLI.core.utils import hr, render_menu, show_table, cls, confirm, Paginator
+from core.utils import hr, render_menu, show_table, cls, confirm, Paginator
 
 
 def menu(conn):
@@ -66,9 +66,12 @@ def roster(conn):
         print(f'  {pager.info}')
         print('  [N]下一页  [P]上一页  [Q]返回')
         c = input('  请选择: ').strip().lower()
-        if c == 'q': break
-        elif c == 'n': pager.next()
-        elif c == 'p': pager.prev()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
 
 
 def class_report(conn):
@@ -107,9 +110,12 @@ def teacher_list(conn):
         print(f'  {pager.info}')
         print('  [N]下一页  [P]上一页  [Q]返回')
         c = input('  请选择: ').strip().lower()
-        if c == 'q': break
-        elif c == 'n': pager.next()
-        elif c == 'p': pager.prev()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
 
 
 def teacher_info(conn):
@@ -616,16 +622,19 @@ def student_add(conn):
     cls()
     print(' —— 新增学生 ——\n')
     no = input(' 学号：').strip()
-    if not no: return
+    if not no:
+        return
     name = input(' 姓名：').strip()
-    if not name: return
+    if not name:
+        return
 
     cur = conn.cursor()
     cur.execute("SELECT id, name FROM class WHERE is_deleted = 0 ORDER BY id")
     classes = cur.fetchall()
     show_table(['班级ID', '班级名'], classes)
     cid = input(' 班级ID：').strip()
-    if not cid: return
+    if not cid:
+        return
 
     try:
         with conn.cursor() as cur:
@@ -640,7 +649,8 @@ def student_add(conn):
 
 def student_edit(conn):
     cid = input('  要修改的学生ID: ').strip()
-    if not cid: return
+    if not cid:
+        return
     cid = int(cid)
 
     cur = conn.cursor()
@@ -676,8 +686,10 @@ def student_edit(conn):
         return
 
     print('\n  将修改:')
-    for k, v in changes.items(): print(f'    {k} → {v}')
-    if not confirm(): return
+    for k, v in changes.items():
+        print(f'    {k} → {v}')
+    if not confirm():
+        return
 
     set_clause = ', '.join(f'{k}=%s' for k in changes)
     cur.execute(f'UPDATE student SET {set_clause} WHERE id = %s',
@@ -688,11 +700,13 @@ def student_edit(conn):
 
 def student_delete(conn):
     cid = input('  要删除的学生ID: ').strip()
-    if not cid: return
+    if not cid:
+        return
     cid = int(cid)
 
     cur = conn.cursor()
-    cur.execute("SELECT name, no FROM student WHERE id = %s AND is_deleted = 0", [cid])
+    cur.execute(
+        "SELECT name, no FROM student WHERE id = %s AND is_deleted = 0", [cid])
     row = cur.fetchone()
     if not row:
         print('  学生不存在')
@@ -701,7 +715,8 @@ def student_delete(conn):
     if confirm(f'确认删除「{row[0]}({row[1]})」？'):
         try:
             with conn.cursor() as cur:
-                cur.execute("UPDATE student SET is_deleted = 1 WHERE id = %s", [cid])
+                cur.execute(
+                    "UPDATE student SET is_deleted = 1 WHERE id = %s", [cid])
                 conn.commit()
             print(f'\n  ✅ 已删除: {row[0]}')
         except Exception as e:
@@ -762,7 +777,8 @@ def offering_add(conn):
     courses = cur.fetchall()
     show_table(['课程ID', '课程名'], courses)
     cid = input(' 课程ID：').strip()
-    if not cid: return
+    if not cid:
+        return
 
     # 列出该课程有资格的教师
     cur.execute("""
@@ -777,18 +793,24 @@ def offering_add(conn):
         return
     show_table(['教师ID', '姓名', '职称'], teachers)
     tid = input(' 教师ID：').strip()
-    if not tid: return
+    if not tid:
+        return
 
     sem = input(' 学期（如 2024-2025-1）：').strip()
-    if not sem: return
+    if not sem:
+        return
     max_s = input(' 选课上限：').strip()
-    if not max_s: return
+    if not max_s:
+        return
     start = input(' 选课开始时间（YYYY-MM-DD HH:MM:SS）：').strip()
-    if not start: return
+    if not start:
+        return
     end = input(' 选课截止时间（YYYY-MM-DD HH:MM:SS）：').strip()
-    if not end: return
+    if not end:
+        return
     deadline = input(' 成绩录入截止时间（YYYY-MM-DD HH:MM:SS）：').strip()
-    if not deadline: return
+    if not deadline:
+        return
 
     try:
         with conn.cursor() as cur:
@@ -806,7 +828,8 @@ def offering_add(conn):
 
 def offering_edit(conn):
     cid = input('  要修改的排课ID: ').strip()
-    if not cid: return
+    if not cid:
+        return
     cid = int(cid)
 
     cur = conn.cursor()
@@ -843,8 +866,10 @@ def offering_edit(conn):
         return
 
     print('\n  将修改:')
-    for k, v in changes.items(): print(f'    {k} → {v}')
-    if not confirm(): return
+    for k, v in changes.items():
+        print(f'    {k} → {v}')
+    if not confirm():
+        return
 
     set_clause = ', '.join(f'{k}=%s' for k in changes)
     cur.execute(f'UPDATE course_offering SET {set_clause} WHERE id = %s',
@@ -855,7 +880,8 @@ def offering_edit(conn):
 
 def offering_delete(conn):
     cid = input('  要删除的排课ID: ').strip()
-    if not cid: return
+    if not cid:
+        return
     cid = int(cid)
 
     cur = conn.cursor()
@@ -926,7 +952,8 @@ def enrollment_menu(conn):
 
 def enrollment_delete(conn):
     eid = input('  要退选的选课ID: ').strip()
-    if not eid: return
+    if not eid:
+        return
 
     cur = conn.cursor()
     cur.execute("""
@@ -961,7 +988,8 @@ def enrollment_delete(conn):
 def class_grade_roster(conn):
     """按班级查看每个学生的各科成绩明细"""
     cid = input('  请输入班级ID: ').strip()
-    if not cid: return
+    if not cid:
+        return
 
     cur = conn.cursor()
     cur.execute("""

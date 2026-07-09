@@ -1,14 +1,14 @@
 """教师功能"""
 import csv
 import os
-from CLI.core.utils import cls, pause, hr, input_choice, render_menu, show_table, Paginator
+from core.utils import cls, pause, hr, input_choice, render_menu, show_table, Paginator
 
 
 def menu(conn, tid, tname, tno):
     _items = [
-        ('录入成绩',           lambda c: grade_input(c, tno)),
-        ('批量录入 (CSV)',     lambda c: batch_grade_input(c, tno)),
-        ('查看我的课程学生',   lambda c: my_students(c, tid, tname)),
+        ('录入成绩', lambda c: grade_input(c, tno)),
+        ('批量录入 (CSV)', lambda c: batch_grade_input(c, tno)),
+        ('查看我的课程学生', lambda c: my_students(c, tid, tname)),
     ]
     while True:
         if render_menu(conn, f'{tname} 老师 [教师]', _items) == 'quit':
@@ -43,9 +43,12 @@ def grade_input(conn, tno):
         print(f'  {o_pager.info}')
         print('  [编号]选排课  [N]下一页  [P]上一页  [Q]返回')
         c = input('  请选择: ').strip().lower()
-        if c == 'q': return
-        elif c == 'n': o_pager.next()
-        elif c == 'p': o_pager.prev()
+        if c == 'q':
+            return
+        elif c == 'n':
+            o_pager.next()
+        elif c == 'p':
+            o_pager.prev()
         else:
             try:
                 idx = int(c)
@@ -79,9 +82,12 @@ def grade_input(conn, tno):
             print(f'  {course_name}  {pager.info}')
             print('  [学号]录入成绩  [N]下一页  [P]上一页  [Q]返回排课列表')
             c = input('  请选择: ').strip().lower()
-            if c == 'q': return
-            elif c == 'n': pager.next()
-            elif c == 'p': pager.prev()
+            if c == 'q':
+                return
+            elif c == 'n':
+                pager.next()
+            elif c == 'p':
+                pager.prev()
             else:
                 stu_no = c
                 if not any(s[0] == stu_no for s in students):
@@ -196,9 +202,12 @@ def my_students(conn, tid, tname):
         print(f'  {pager.info}')
         print('  [N]下一页  [P]上一页  [Q]返回')
         c = input('  请选择: ').strip().lower()
-        if c == 'q': break
-        elif c == 'n': pager.next()
-        elif c == 'p': pager.prev()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
 
 
 def teacher_offerings(conn, tno):

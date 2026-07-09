@@ -1,5 +1,5 @@
 """学生功能"""
-from CLI.core.utils import cls, render_menu, show_table, Paginator
+from core.utils import cls, render_menu, show_table, Paginator
 
 
 def menu(conn, sid, sname, sno):

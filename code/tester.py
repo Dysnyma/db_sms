@@ -1,5 +1,5 @@
 """测试员 —— 身份切换 → 调真实菜单，零重复代码"""
-from CLI.core.utils import cls, show_table
+from core.utils import cls, show_table
 from student import menu as student_menu
 from teacher import menu as teacher_menu
 from admin import menu as admin_menu

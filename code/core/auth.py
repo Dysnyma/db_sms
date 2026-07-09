@@ -1,5 +1,5 @@
 """登录认证"""
-from CLI.core.utils import hr
+from core.utils import hr
 
 
 def login(conn):

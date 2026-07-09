@@ -1,7 +1,7 @@
 import streamlit as st
-from CLI.core.config import connect
-from CLI.student import show_courses, my_grades, semester_avg, enrolled_courses
-from CLI.teacher import teacher_offerings, offering_students
+from core.config import connect
+from student import show_courses, my_grades, semester_avg, enrolled_courses
+from teacher import teacher_offerings, offering_students
 import csv
 import pandas as pd
 st.title('学生成绩管理系统')

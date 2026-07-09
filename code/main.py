@@ -1,11 +1,11 @@
 """学生成绩管理系统 —— 命令行交互界面（三角色）"""
-from CLI.core.config import connect
-from CLI.core.utils import cls, pause
-from CLI.core.auth import login
-import CLI.student as student
-import CLI.teacher as teacher
-import CLI.admin as admin
-import CLI.tester as tester
+from core.config import connect
+from core.utils import cls, pause
+from core.auth import login
+import student as student
+import teacher as teacher
+import admin as admin
+import tester as tester
 
 
 def main():
