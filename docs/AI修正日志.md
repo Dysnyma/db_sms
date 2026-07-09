@@ -12,3 +12,6 @@
 | 2026-07-08 00:03:30 | sed 把 admin.py 覆盖为 teacher.py 内容 | 重新写入完整 admin.py |
 | 2026-07-08 00:03:30 | subprocess.run 卡死 | 加 --batch + timeout |
 | 2026-07-08 00:03:30 | import os 放在函数内部致 restore 报错 | 移到文件顶部 |
+| 2026-07-09 | 教师管理新增后清除 ca_name 等班级 key（复制粘贴） | 改为 ta_name/ta_no/ta_title/ta_phone |
+| 2026-07-09 | 学生管理新增后清除 coa_name 等课程 key（复制粘贴） | 改为 sa_name/sa_no/sa_class |
+| 2026-07-09 | 排课管理删除末尾双重 st.rerun() | 删除多余的死代码 |
