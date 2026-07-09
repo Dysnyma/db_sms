@@ -17,3 +17,4 @@
 | 2026-07-09 | 排课管理删除末尾双重 st.rerun() | 删除多余的死代码 |
 | 2026-07-09 | grade_input / batch_grade / enrollment 用 st.success+rerun 导致消息丢失 | 统一改为 session_state.msg 模式 |
 | 2026-07-09 | enrollment_manage 字典构建两次 | 提取为 emap 变量 |
+| 2026-07-09 | 排课管理新增用 selectbox 下拉 + number_input 带初始值，风格突兀 | 改为纯 text_input，校验移入按钮逻辑 |
