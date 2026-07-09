@@ -6,6 +6,9 @@ from admin import (summary, class_list, roster_data, course_list, class_report_d
                    grade_roster_data, teacher_info_data, teacher_list_data, enrollment_list,
                    teacher_full_list, student_full_list, offering_full_list)
 import csv
+import os
+import subprocess
+from datetime import datetime
 import pandas as pd
 st.title('学生成绩管理系统')
 
@@ -195,18 +198,12 @@ def class_report_page(conn):
     col1, col2 = st.columns(2)
     classes = class_list(conn)
     courses = course_list(conn)
-    cid = col1.selectbox('选择班级',
-                         list({f'{r[1]} ({r[2]}级)': r[0]
-                              for r in classes}.keys()),
-                         format_func=lambda k: k)
-    gid = col2.selectbox('选择课程',
-                         list({f'{r[1]} ({r[2]}学分)': r[0]
-                              for r in courses}.keys()),
-                         format_func=lambda k: k)
-
-    # 用字典反查ID
-    class_id = {f'{r[1]} ({r[2]}级)': r[0] for r in classes}[cid]
-    course_id = {f'{r[1]} ({r[2]}学分)': r[0] for r in courses}[gid]
+    cmap = {f'{r[1]} ({r[2]}级)': r[0] for r in classes}
+    gmap = {f'{r[1]} ({r[2]}学分)': r[0] for r in courses}
+    cid = col1.selectbox('选择班级', list(cmap.keys()))
+    gid = col2.selectbox('选择课程', list(gmap.keys()))
+    class_id = cmap[cid]
+    course_id = gmap[gid]
 
     rows = class_report_data(conn, class_id, course_id)
     if not rows or not rows[0][0]:
@@ -223,9 +220,9 @@ def class_report_page(conn):
 
 def class_grade_roster_page(conn):
     classes = class_list(conn)
-    cid = st.selectbox('选择班级',
-                       list({f'{r[1]} ({r[2]}级)': r[0] for r in classes}.keys()))
-    class_id = {f'{r[1]} ({r[2]}级)': r[0] for r in classes}[cid]
+    cmap = {f'{r[1]} ({r[2]}级)': r[0] for r in classes}
+    cid = st.selectbox('选择班级', list(cmap.keys()))
+    class_id = cmap[cid]
     rows = grade_roster_data(conn, class_id)
     if not rows:
         st.info('该班级暂无成绩')
@@ -263,9 +260,6 @@ def teacher_list_page(conn):
 
 def backup_page(conn):
     if st.button('备份数据库'):
-        import subprocess
-        import os
-        from datetime import datetime
         os.makedirs('backup', exist_ok=True)
         name = f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.sql'
         r = subprocess.run(
@@ -285,7 +279,6 @@ def restore_page(conn):
     if not file:
         return
     if st.button('确认恢复（覆盖当前数据！）'):
-        import subprocess
         content = ('SET FOREIGN_KEY_CHECKS=0;\n'
                    + file.read().decode('utf-8')
                    + '\nSET FOREIGN_KEY_CHECKS=1;')
