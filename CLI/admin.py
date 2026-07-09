@@ -2,7 +2,7 @@
 import os
 import subprocess
 from datetime import datetime
-from core.utils import hr, render_menu, show_table, cls, confirm
+from core.utils import hr, render_menu, show_table, cls, confirm, Paginator
 
 
 def menu(conn):
@@ -10,13 +10,17 @@ def menu(conn):
         ('数据概览',     summary),
         ('班级学生名单', roster),
         ('班级成绩统计', class_report),
+        ('班级成绩明细', class_grade_roster),
         ('教师信息',     teacher_info),
         ('教师列表',     teacher_list),
         ('备份数据',     backup),
         ('恢复数据',     restore),
         ('班级管理', class_menu),
-        ('课程管理', course_menu),
-        ('教师管理', teacher_menu),
+        ('课程管理',     course_menu),
+        ('教师管理',     teacher_menu),
+        ('学生管理',     student_menu),
+        ('排课管理',     offering_menu),
+        ('选课管理',     enrollment_menu),
     ]
     while True:
         if render_menu(conn, '教务管理员 [教务]', _items, 2) == 'quit':
@@ -54,11 +58,17 @@ def roster(conn):
     if not rows:
         print('\n  该班级没有学生')
         return
-    hr()
-    print(f'  学号\t姓名\t学籍分\t绩点分')
-    hr()
-    for no, name, ws, gpa in rows:
-        print(f'  {no}\t{name}\t{str(ws)}\t{str(gpa)}')
+
+    pager = Paginator(rows)
+    while True:
+        cls()
+        show_table(['学号', '姓名', '学籍分', '绩点分'], pager.items)
+        print(f'  {pager.info}')
+        print('  [N]下一页  [P]上一页  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q': break
+        elif c == 'n': pager.next()
+        elif c == 'p': pager.prev()
 
 
 def class_report(conn):
@@ -88,11 +98,18 @@ def teacher_list(conn):
     if not rows:
         print('\n  暂无教师')
         return
-    hr()
-    print(f'  工号\t姓名\t职称\t排课\t学生\t已录')
-    hr()
-    for r in rows:
-        print(f'  {r[0]}\t{r[1]}\t{r[2] or "-"}\t{r[3]}\t{r[4]}\t{r[5]}')
+
+    pager = Paginator(rows)
+    while True:
+        cls()
+        show_table(['工号', '姓名', '职称', '排课', '学生', '已录'],
+                   [[r[0], r[1], r[2] or '-', r[3], r[4], r[5]] for r in pager.items])
+        print(f'  {pager.info}')
+        print('  [N]下一页  [P]上一页  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q': break
+        elif c == 'n': pager.next()
+        elif c == 'p': pager.prev()
 
 
 def teacher_info(conn):
@@ -153,26 +170,36 @@ def restore(conn):
 
 
 def class_menu(conn):
+    pager = None
     while True:
         cls()
         cur = conn.cursor()
         cur.execute("""
             SELECT id,name,grade,major,
                 CASE status WHEN 1 THEN '在读' ELSE '毕业' END
-            FROM class AS c
-            WHERE c.is_deleted = 0
+            FROM class
+            WHERE is_deleted = 0
             ORDER BY id
         """)
         rows = cur.fetchall()
-        headers = ['班级ID', '班级名', '年级', '专业', '状态']
+        if not pager:
+            pager = Paginator(rows)
+        else:
+            pager.rows = rows
 
-        show_table(headers, rows)
-        print('[A]新增  [E]修改  [D]删除  [Q]返回')
+        show_table(['班级ID', '班级名', '年级', '专业', '状态'], pager.items)
+        print(f'  {pager.info}')
+        print('  [A]新增  [E]修改  [D]删除  [N]下一页  [P]上一页  [Q]返回')
         c = input('  请选择: ').strip().lower()
         if c == 'q':
             break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
         elif c == 'a':
             class_add(conn)
+            pager.reset()
         elif c == 'e':
             class_edit(conn)
         elif c == 'd':
@@ -278,27 +305,36 @@ def class_delete(conn):
 
 
 def course_menu(conn):
+    pager = None
     while True:
         cls()
         cur = conn.cursor()
         cur.execute("""
             SELECT id,name,credit,
                 CASE status WHEN 1 THEN '开课' ELSE '停开' END
-                ,create_time
-            FROM course AS c
-            WHERE c.is_deleted = 0
+            FROM course
+            WHERE is_deleted = 0
             ORDER BY id
         """)
         rows = cur.fetchall()
-        headers = ['课程ID', '课程名', '学分', '状态', '创建时间']
+        if not pager:
+            pager = Paginator(rows)
+        else:
+            pager.rows = rows
 
-        show_table(headers, rows)
-        print('[A]新增  [E]修改  [D]删除  [Q]返回')
+        show_table(['课程ID', '课程名', '学分', '状态'], pager.items)
+        print(f'  {pager.info}')
+        print('  [A]新增  [E]修改  [D]删除  [N]下一页  [P]上一页  [Q]返回')
         c = input('  请选择: ').strip().lower()
         if c == 'q':
             break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
         elif c == 'a':
             course_add(conn)
+            pager.reset()
         elif c == 'e':
             course_edit(conn)
         elif c == 'd':
@@ -404,6 +440,7 @@ def course_delete(conn):
 # ============================================================
 
 def teacher_menu(conn):
+    pager = None
     while True:
         cls()
         cur = conn.cursor()
@@ -415,13 +452,24 @@ def teacher_menu(conn):
             ORDER BY no
         """)
         rows = cur.fetchall()
-        show_table(['教师ID', '姓名', '工号', '职称', '电话', '状态'], rows)
-        print('  [A]新增  [E]修改  [D]删除  [Q]返回')
+        if not pager:
+            pager = Paginator(rows)
+        else:
+            pager.rows = rows
+
+        show_table(['教师ID', '姓名', '工号', '职称', '电话', '状态'], pager.items)
+        print(f'  {pager.info}')
+        print('  [A]新增  [E]修改  [D]删除  [N]下一页  [P]上一页  [Q]返回')
         c = input('  请选择: ').strip().lower()
         if c == 'q':
             break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
         elif c == 'a':
             teacher_add(conn)
+            pager.reset()
         elif c == 'e':
             teacher_edit(conn)
         elif c == 'd':
@@ -520,3 +568,428 @@ def teacher_delete(conn):
             print(f'\n  ✅ 已删除: {row[0]}')
         except Exception as e:
             print(f'\n  ❌ 删除失败: {e}')
+
+
+# ============================================================
+#  学生管理
+# ============================================================
+
+def student_menu(conn):
+    pager = None
+    while True:
+        cls()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT s.id, s.name, s.no, c.name,
+                   CASE s.status WHEN 1 THEN '在读' ELSE '离校' END
+            FROM student s
+            JOIN class c ON s.class_id = c.id
+            WHERE s.is_deleted = 0
+            ORDER BY s.no
+        """)
+        rows = cur.fetchall()
+        if not pager:
+            pager = Paginator(rows)
+        else:
+            pager.rows = rows
+
+        show_table(['学生ID', '姓名', '学号', '班级', '状态'], pager.items)
+        print(f'  {pager.info}')
+        print('  [A]新增  [E]修改  [D]删除  [N]下一页  [P]上一页  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
+        elif c == 'a':
+            student_add(conn)
+            pager.reset()
+        elif c == 'e':
+            student_edit(conn)
+        elif c == 'd':
+            student_delete(conn)
+
+
+def student_add(conn):
+    cls()
+    print(' —— 新增学生 ——\n')
+    no = input(' 学号：').strip()
+    if not no: return
+    name = input(' 姓名：').strip()
+    if not name: return
+
+    cur = conn.cursor()
+    cur.execute("SELECT id, name FROM class WHERE is_deleted = 0 ORDER BY id")
+    classes = cur.fetchall()
+    show_table(['班级ID', '班级名'], classes)
+    cid = input(' 班级ID：').strip()
+    if not cid: return
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO student (no, name, class_id) VALUES (%s, %s, %s)",
+                [no, name, int(cid)])
+            conn.commit()
+        print(f'\n  ✅ 新增成功: {name}')
+    except Exception as e:
+        print(f'\n  ❌ 新增失败: {e}')
+
+
+def student_edit(conn):
+    cid = input('  要修改的学生ID: ').strip()
+    if not cid: return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT name, no, class_id, status FROM student WHERE id = %s AND is_deleted = 0", [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  学生不存在')
+        return
+
+    changes = {}
+    for label, col, old in [
+        ('姓名', 'name', row[0]),
+        ('学号', 'no',   row[1]),
+    ]:
+        val = input(f'  {label} [{old}]: ').strip()
+        if val and val != str(old):
+            changes[col] = val
+
+    cur.execute("SELECT id, name FROM class WHERE is_deleted = 0 ORDER BY id")
+    classes = cur.fetchall()
+    show_table(['班级ID', '班级名'], classes)
+    val = input(f'  班级ID [当前:{row[2]}]: ').strip()
+    if val and int(val) != row[2]:
+        changes['class_id'] = int(val)
+
+    s = input(f'  状态 [1=在读 0=离校，当前:{row[3]}]: ').strip()
+    if s in ('0', '1') and int(s) != row[3]:
+        changes['status'] = int(s)
+
+    if not changes:
+        print('  没有改动')
+        return
+
+    print('\n  将修改:')
+    for k, v in changes.items(): print(f'    {k} → {v}')
+    if not confirm(): return
+
+    set_clause = ', '.join(f'{k}=%s' for k in changes)
+    cur.execute(f'UPDATE student SET {set_clause} WHERE id = %s',
+                list(changes.values()) + [cid])
+    conn.commit()
+    print('  ✅ 已修改')
+
+
+def student_delete(conn):
+    cid = input('  要删除的学生ID: ').strip()
+    if not cid: return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute("SELECT name, no FROM student WHERE id = %s AND is_deleted = 0", [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  学生不存在')
+        return
+
+    if confirm(f'确认删除「{row[0]}({row[1]})」？'):
+        try:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE student SET is_deleted = 1 WHERE id = %s", [cid])
+                conn.commit()
+            print(f'\n  ✅ 已删除: {row[0]}')
+        except Exception as e:
+            print(f'\n  ❌ 删除失败: {e}')
+
+
+# ============================================================
+#  排课管理
+# ============================================================
+
+def offering_menu(conn):
+    pager = None
+    while True:
+        cls()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT co.id, c.name, t.name, co.semester,
+                   co.current_students, co.max_students,
+                   CASE co.status WHEN 1 THEN '有效' ELSE '取消' END
+            FROM course_offering co
+            JOIN course c ON co.course_id = c.id
+            JOIN teacher t ON co.teacher_id = t.id
+            WHERE co.is_deleted = 0
+            ORDER BY co.semester DESC, c.name
+        """)
+        rows = cur.fetchall()
+        if not pager:
+            pager = Paginator(rows)
+        else:
+            pager.rows = rows
+
+        show_table(['排课ID', '课程', '教师', '学期', '已选', '上限', '状态'], pager.items)
+        print(f'  {pager.info}')
+        print('  [A]新增  [E]修改  [D]删除  [N]下一页  [P]上一页  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
+        elif c == 'a':
+            offering_add(conn)
+            pager.reset()
+        elif c == 'e':
+            offering_edit(conn)
+        elif c == 'd':
+            offering_delete(conn)
+
+
+def offering_add(conn):
+    cls()
+    print(' —— 新增排课 ——\n')
+    cur = conn.cursor()
+
+    # 选课程
+    cur.execute("SELECT id, name FROM course WHERE is_deleted = 0 ORDER BY id")
+    courses = cur.fetchall()
+    show_table(['课程ID', '课程名'], courses)
+    cid = input(' 课程ID：').strip()
+    if not cid: return
+
+    # 列出该课程有资格的教师
+    cur.execute("""
+        SELECT t.id, t.name, IFNULL(t.title,'-')
+        FROM teacher t
+        JOIN teacher_course tc ON t.id = tc.teacher_id
+        WHERE tc.course_id = %s AND t.is_deleted = 0
+    """, [int(cid)])
+    teachers = cur.fetchall()
+    if not teachers:
+        print('  该课程没有教师能上！请先在管理中设置讲授关系')
+        return
+    show_table(['教师ID', '姓名', '职称'], teachers)
+    tid = input(' 教师ID：').strip()
+    if not tid: return
+
+    sem = input(' 学期（如 2024-2025-1）：').strip()
+    if not sem: return
+    max_s = input(' 选课上限：').strip()
+    if not max_s: return
+    start = input(' 选课开始时间（YYYY-MM-DD HH:MM:SS）：').strip()
+    if not start: return
+    end = input(' 选课截止时间（YYYY-MM-DD HH:MM:SS）：').strip()
+    if not end: return
+    deadline = input(' 成绩录入截止时间（YYYY-MM-DD HH:MM:SS）：').strip()
+    if not deadline: return
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO course_offering
+                  (course_id, teacher_id, semester, max_students,
+                   enroll_start_time, enroll_end_time, grade_deadline)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, [int(cid), int(tid), sem, int(max_s), start, end, deadline])
+            conn.commit()
+        print('\n  ✅ 新增成功')
+    except Exception as e:
+        print(f'\n  ❌ 新增失败: {e}')
+
+
+def offering_edit(conn):
+    cid = input('  要修改的排课ID: ').strip()
+    if not cid: return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT semester, max_students,
+               enroll_start_time, enroll_end_time, grade_deadline,
+               status
+        FROM course_offering
+        WHERE id = %s AND is_deleted = 0
+    """, [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  排课不存在')
+        return
+
+    changes = {}
+    for label, col, old in [
+        ('学期',             'semester',           str(row[0])),
+        ('选课上限',         'max_students',       row[1]),
+        ('选课开始时间',     'enroll_start_time',  str(row[2])),
+        ('选课截止时间',     'enroll_end_time',    str(row[3])),
+        ('成绩录入截止时间', 'grade_deadline',     str(row[4])),
+    ]:
+        val = input(f'  {label} [{old}]: ').strip()
+        if val and val != str(old):
+            changes[col] = val
+
+    s = input(f'  状态 [1=有效 0=取消，当前:{row[5]}]: ').strip()
+    if s in ('0', '1') and int(s) != row[5]:
+        changes['status'] = int(s)
+
+    if not changes:
+        print('  没有改动')
+        return
+
+    print('\n  将修改:')
+    for k, v in changes.items(): print(f'    {k} → {v}')
+    if not confirm(): return
+
+    set_clause = ', '.join(f'{k}=%s' for k in changes)
+    cur.execute(f'UPDATE course_offering SET {set_clause} WHERE id = %s',
+                list(changes.values()) + [cid])
+    conn.commit()
+    print('  ✅ 已修改')
+
+
+def offering_delete(conn):
+    cid = input('  要删除的排课ID: ').strip()
+    if not cid: return
+    cid = int(cid)
+
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT c.name, t.name, co.semester
+        FROM course_offering co
+        JOIN course c ON co.course_id = c.id
+        JOIN teacher t ON co.teacher_id = t.id
+        WHERE co.id = %s AND co.is_deleted = 0
+    """, [cid])
+    row = cur.fetchone()
+    if not row:
+        print('  排课不存在')
+        return
+
+    if confirm(f'确认删除「{row[0]} - {row[1]} ({row[2]})」？'):
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE course_offering SET is_deleted = 1 WHERE id = %s", [cid])
+                conn.commit()
+            print(f'\n  ✅ 已删除')
+        except Exception as e:
+            print(f'\n  ❌ 删除失败: {e}')
+
+
+# ============================================================
+#  选课管理
+# ============================================================
+
+def enrollment_menu(conn):
+    pager = None
+    while True:
+        cls()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT e.id, s.name, s.no, c.name, t.name, co.semester,
+                   IFNULL(e.score, '未录入'), c.name AS class_name
+            FROM enrollment e
+            JOIN student s ON e.student_id = s.id
+            JOIN class cl ON s.class_id = cl.id
+            JOIN course_offering co ON e.offering_id = co.id
+            JOIN course c ON co.course_id = c.id
+            JOIN teacher t ON co.teacher_id = t.id
+            WHERE e.is_deleted = 0
+            ORDER BY co.semester DESC, s.no
+        """)
+        rows = cur.fetchall()
+        if not pager:
+            pager = Paginator(rows)
+        else:
+            pager.rows = rows
+
+        show_table(['选课ID', '学生', '学号', '课程', '教师', '学期', '成绩'], pager.items)
+        print(f'  {pager.info}')
+        print('  [D]强制退选  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
+        elif c == 'd':
+            enrollment_delete(conn)
+            pager.reset()
+
+
+def enrollment_delete(conn):
+    eid = input('  要退选的选课ID: ').strip()
+    if not eid: return
+
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.name, c.name, t.name
+        FROM enrollment e
+        JOIN student s ON e.student_id = s.id
+        JOIN course_offering co ON e.offering_id = co.id
+        JOIN course c ON co.course_id = c.id
+        JOIN teacher t ON co.teacher_id = t.id
+        WHERE e.id = %s AND e.is_deleted = 0
+    """, [int(eid)])
+    row = cur.fetchone()
+    if not row:
+        print('  选课记录不存在')
+        return
+
+    if confirm(f'强制退选「{row[0]} → {row[1]} ({row[2]})」？'):
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE enrollment SET is_deleted = 1 WHERE id = %s", [int(eid)])
+                conn.commit()
+            print(f'\n  ✅ 已退选: {row[0]}')
+        except Exception as e:
+            print(f'\n  ❌ 操作失败: {e}')
+
+
+# ============================================================
+#  按班级查成绩登记册
+# ============================================================
+
+def class_grade_roster(conn):
+    """按班级查看每个学生的各科成绩明细"""
+    cid = input('  请输入班级ID: ').strip()
+    if not cid: return
+
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.name, s.no, c.name AS course, t.name AS teacher,
+               co.semester, IFNULL(e.score, '未录入')
+        FROM enrollment e
+        JOIN student s ON e.student_id = s.id
+        JOIN course_offering co ON e.offering_id = co.id
+        JOIN course c ON co.course_id = c.id
+        JOIN teacher t ON co.teacher_id = t.id
+        WHERE s.class_id = %s AND e.is_deleted = 0
+        ORDER BY s.no, co.semester, c.name
+    """, [int(cid)])
+    rows = cur.fetchall()
+    if not rows:
+        print('\n  该班级暂无成绩')
+        return
+
+    pager = Paginator(rows)
+    while True:
+        cls()
+        show_table(['姓名', '学号', '课程', '教师', '学期', '成绩'], pager.items)
+        print(f'  {pager.info}')
+        print('  [N]下一页  [P]上一页  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()

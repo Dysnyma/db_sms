@@ -1,5 +1,5 @@
 """学生功能"""
-from core.utils import cls, pause, hr, input_choice, render_menu
+from CLI.core.utils import cls, render_menu, show_table, Paginator
 
 
 def menu(conn, sid, sname, sno):
@@ -8,8 +8,8 @@ def menu(conn, sid, sname, sno):
     # 这样 render_menu 统一传 func(conn) 时，sno 已经被填好了
     _items = [
         ('查询可选课程', lambda c: show_courses(c, sno)),
-        ('选课',         lambda c: enroll(c, sno)),
-        ('退选',         lambda c: unenroll(c, sno)),
+        ('选课', lambda c: enroll(c, sno)),
+        ('退选', lambda c: unenroll(c, sno)),
         ('查看我的成绩', lambda c: my_grades(c, sid, sname)),
         ('查看学期均分', lambda c: semester_avg(c, sno)),
     ]
@@ -18,24 +18,38 @@ def menu(conn, sid, sname, sno):
             break
 
 
-def show_courses(conn, sno):
-    # with写法可以实现用完自动关掉
+def show_courses(conn, sno, paged=True):
     with conn.cursor() as cur:
         cur.callproc('sp_show_courses', [sno])
         rows = cur.fetchall()
         cur.nextset()
     if not rows:
         print('\n  没有可选课程')
-        return
-    hr()
-    print(f'  ID	课程名	学分	教师	名额	截止时间')
-    hr()
-    for r in rows:
-        print(f'  {r[0]}	{r[1]}	{r[2]}	{r[3]}	{r[5]}	{str(r[7])[:16]}')
+        return []
+
+    if not paged:
+        return rows
+
+    pager = Paginator(rows)
+    while True:
+        cls()
+        show_table(['排课ID', '课程名', '学分', '教师', '名额', '截止时间'],
+                   [[r[0], r[1], r[2], r[3], r[5], str(r[7])[:16]] for r in pager.items])
+        print(f'  {pager.info}')
+        print('  [N]下一页  [P]上一页  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
 
 
 def enroll(conn, sno):
-    show_courses(conn, sno)
+    rows = show_courses(conn, sno, paged=False)
+    if not rows:
+        return
     plan_id = input('\n  请输入要选的排课ID (0=取消): ').strip()
     if plan_id == '0' or not plan_id:
         return
@@ -73,20 +87,29 @@ def my_grades(conn, sid, sname):
         ORDER BY co.semester, c.name
     """, [sid])
     rows = cur.fetchall()
-    cur.nextset()
     if not rows:
         print('\n  暂无成绩')
         return
-    hr()
-    print(f'  {sname} 的成绩单')
-    hr()
-    for cname, tname, sem, score in rows:
-        sc = str(score) if score is not None else '未录入'
-        print(f'  {sem}	{cname}	{tname}	{sc}')
+
     cur.execute("SELECT weighted_score, gpa FROM student WHERE id = %s", [sid])
     ws, gpa = cur.fetchone()
-    hr()
-    print(f'  学籍分: {ws}    绩点分: {gpa}')
+
+    pager = Paginator(rows)
+    while True:
+        cls()
+        show_table(['课程', '教师', '学期', '成绩'],
+                   [[r[0], r[1], r[2], str(r[3]) if r[3] is not None else '未录入']
+                    for r in pager.items])
+        print(f'  学籍分: {ws}    绩点分: {gpa}')
+        print(f'  {pager.info}')
+        print('  [N]下一页  [P]上一页  [Q]返回')
+        c = input('  请选择: ').strip().lower()
+        if c == 'q':
+            break
+        elif c == 'n':
+            pager.next()
+        elif c == 'p':
+            pager.prev()
 
 
 def semester_avg(conn, sno):

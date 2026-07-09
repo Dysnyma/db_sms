@@ -70,6 +70,39 @@ def confirm(prompt='确认？'):
     return input(f' {prompt} (Y/n): ').strip().lower() in ('', 'y')
 
 
+class Paginator:
+    """分页器：只管切片和翻页，不管显示"""
+
+    def __init__(self, rows, per_page=10):
+        self.rows = rows
+        self.per_page = per_page
+        self.page = 0
+
+    @property
+    def items(self):
+        start = self.page * self.per_page
+        return self.rows[start:start + self.per_page]
+
+    @property
+    def total(self):
+        return (len(self.rows) + self.per_page - 1) // self.per_page
+
+    @property
+    def info(self):
+        return f'第 {self.page+1}/{self.total} 页，共 {len(self.rows)} 条'
+
+    def next(self):
+        if self.page < self.total - 1:
+            self.page += 1
+
+    def prev(self):
+        if self.page > 0:
+            self.page -= 1
+
+    def reset(self):
+        self.page = 0
+
+
 def show_table(headers, rows):
     """对齐打印表格，自动算列宽（兼容中文）"""
     if not rows:

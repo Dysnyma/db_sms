@@ -23,7 +23,7 @@ BEGIN
     DECLARE v_id INT;
     SELECT id INTO v_id
     FROM student
-    WHERE no = p_student_no AND is_deleted = 0;
+    WHERE no = p_student_no COLLATE utf8mb4_unicode_ci AND is_deleted = 0;
     RETURN v_id;
 END;;
 
@@ -45,7 +45,7 @@ BEGIN
     DECLARE v_id INT;
     SELECT id INTO v_id
     FROM teacher
-    WHERE no = p_teacher_no AND is_deleted = 0;
+    WHERE no = p_teacher_no COLLATE utf8mb4_unicode_ci AND is_deleted = 0;
     RETURN v_id;
 END;;
 

@@ -36,14 +36,20 @@ BEGIN
         enroll_start_time,
         enroll_end_time
     FROM v_course_plan
-    WHERE enroll_status = '选课中'
+    WHERE enroll_status = '选课中' COLLATE utf8mb4_unicode_ci
       AND remaining_seats > 0
       AND plan_id NOT IN (
           SELECT offering_id FROM enrollment
           WHERE student_id = fn_get_student_id(p_student_no)
             AND is_deleted = 0
       )
-    ORDER BY course_name, teacher_name;
+      AND course_id NOT IN (
+          SELECT co2.course_id FROM enrollment e2
+          JOIN course_offering co2 ON e2.offering_id = co2.id
+          WHERE e2.student_id = fn_get_student_id(p_student_no)
+            AND e2.is_deleted = 0
+      )
+    ORDER BY course_id,teacher_name;
 END;;
 
 DELIMITER ;

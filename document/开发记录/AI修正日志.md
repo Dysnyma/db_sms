@@ -12,3 +12,11 @@
 | 2026-07-07 15:10:12 | sed 替换 `_show_courses` 时把存储过程名 `sp_show_courses` 也改成了 `spshow_courses` | 手动逐条修复所有存储过程名称 |
 | 2026-07-07 15:10:12 | tester.py 把 student/teacher/admin 的函数重新定义了一遍，代码大量重复 | 公开原函数，tester 用 import 引用 |
 | 2026-07-08 | `sp_enroll` 未检查「同一门课不能选两个老师」，学生可以对同一课程选不同老师的班 | 新增第 4 步校验：JOIN `course_offering` 查 `course_id`，已选过同课程任意排课则拒绝 |
+| 2026-07-08 | `sp_show_courses` 同上，查可选课时仍会显示已选同课的其他教师 | 新增 `course_id NOT IN` 子查询，排除已选过的课程 ID |
+| 2026-07-08 | MySQL 8.0 连接默认 `utf8mb4_0900_ai_ci` 与数据库 `utf8mb4_unicode_ci` 冲突，报 1267 错误 | pymysql 连接加 `collation: 'utf8mb4_unicode_ci'`，fn 和 SP 的字符串比较加 `COLLATE` 双保险 |
+| 2026-07-08 | tester.py 自建子菜单和 lambda 包装，代码 175 行且与 student/teacher/admin 重复 | 精简为 83 行跳板：S 换学生→调 student.menu，T 换教师→调 teacher.menu，A→调 admin.menu |
+| 2026-07-08 | `class_edit` 被 `class_delete` 覆盖丢失 | 重新写回，顺便补上 `course_edit` |
+| 2026-07-08 | `class_add` SQL 用 f-string 拼接，无引号会报错 + 注入风险 | 改用 `%s` 占位符传参 |
+| 2026-07-08 | 各 menu 数据太多一次全显示 | 封装 Paginator 类，5 个管理菜单 + roster/teacher_list/my_grades/show_courses 全用分页 |
+| 2026-07-08 | 教师录成绩要盲打排课 ID | 改为两步分页：先选排课（带已选/上限）→ 循环录成绩，录完自动刷新列表 |
+| 2026-07-08 | ORDER BY course_name 不够 | 改 `ORDER BY course_id, teacher_name`，同一门课排在一起 |
