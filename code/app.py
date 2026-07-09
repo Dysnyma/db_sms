@@ -240,13 +240,14 @@ def teacher_info_page(conn):
         st.error('教师不存在')
         return
     r = rows[0]
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
     c1.metric('工号', r[0])
     c2.metric('姓名', r[1])
     c3.metric('职称', r[2] or '-')
-    c4.metric('排课数', r[3])
-    c1.metric('选课学生', r[4])
-    c2.metric('已录入成绩', r[5])
+    c1, c2, c3 = st.columns(3)
+    c1.metric('排课数', r[3])
+    c2.metric('选课学生', r[4])
+    c3.metric('已录入成绩', r[5])
 
 
 def teacher_list_page(conn):
