@@ -581,11 +581,14 @@ def offering_manage_page(conn):
         else:
             tlmap = {f'{r[1]} ({r[2]})': r[0] for r in teachers}
             tid = st.selectbox('教师', list(tlmap.keys()), key='oa_teacher')
-        sem = st.text_input('学期', placeholder='如 2024-2025-1', key='oa_sem')
-        max_s = st.text_input('上限', placeholder='如 60', key='oa_max')
-        start = st.text_input('选课开始', placeholder='2025-01-01 00:00:00', key='oa_start')
-        end = st.text_input('选课截止', placeholder='2025-06-30 23:59:59', key='oa_end')
-        deadline = st.text_input('成绩截止', placeholder='2025-07-15 23:59:59', key='oa_deadline')
+        # 学期下拉：当前年份前后各3年
+        this_year = datetime.now().year
+        sem_options = [f'{y}-{y+1}-{s}' for y in range(this_year - 3, this_year + 2) for s in (1, 2)]
+        sem = st.selectbox('学期', sem_options, key='oa_sem')
+        max_s = st.number_input('上限', min_value=1, value=30, key='oa_max')
+        start = st.date_input('选课开始', key='oa_start')
+        end = st.date_input('选课截止', key='oa_end')
+        deadline = st.date_input('成绩截止', key='oa_deadline')
         if st.button('新增排课', key='btn_oa'):
             if not teachers:
                 st.error('该课程暂无能上的教师，请重新选择课程')
@@ -596,7 +599,8 @@ def offering_manage_page(conn):
                         (course_id,teacher_id,semester,max_students,
                          enroll_start_time,enroll_end_time,grade_deadline)
                         VALUES (%s,%s,%s,%s,%s,%s,%s)""",
-                                [course_id, tlmap[tid], sem, max_s, start, end, deadline])
+                                [course_id, tlmap[tid], sem, max_s,
+                                 str(start), str(end), str(deadline)])
                     conn.commit()
                     st.session_state.msg = ('success', '新增成功')
                     for k in ['oa_course', 'oa_teacher', 'oa_sem', 'oa_max', 'oa_start', 'oa_end', 'oa_deadline']:
@@ -613,23 +617,27 @@ def offering_manage_page(conn):
             cur.execute("""SELECT semester, max_students, enroll_start_time,
                 enroll_end_time, grade_deadline FROM course_offering WHERE id=%s""", [oid])
             row = cur.fetchone()
-            new_sem = st.text_input(
-                '学期', value=str(row[0]), key=f'oe_sem_{oid}')
-            new_max = st.text_input(
-                '上限', value=str(row[1]), key=f'oe_max_{oid}')
-            new_start = st.text_input(
-                '选课开始', value=str(row[2]), key=f'oe_start_{oid}')
-            new_end = st.text_input(
-                '选课截止', value=str(row[3]), key=f'oe_end_{oid}')
-            new_dl = st.text_input('成绩截止', value=str(
-                row[4]), key=f'oe_deadline_{oid}')
+            # 学期：当前值不在列表中则追加
+            sem_opts = [f'{y}-{y+1}-{s}' for y in range(datetime.now().year - 3, datetime.now().year + 2) for s in (1, 2)]
+            cur_sem = str(row[0])
+            if cur_sem not in sem_opts:
+                sem_opts.insert(0, cur_sem)
+            new_sem = st.selectbox('学期', sem_opts,
+                                   index=sem_opts.index(cur_sem), key=f'oe_sem_{oid}')
+            new_max = st.number_input('上限', min_value=1, value=int(row[1]), key=f'oe_max_{oid}')
+            new_start = st.date_input('选课开始', value=datetime.strptime(str(row[2])[:10], '%Y-%m-%d').date(),
+                                      key=f'oe_start_{oid}')
+            new_end = st.date_input('选课截止', value=datetime.strptime(str(row[3])[:10], '%Y-%m-%d').date(),
+                                    key=f'oe_end_{oid}')
+            new_dl = st.date_input('成绩截止', value=datetime.strptime(str(row[4])[:10], '%Y-%m-%d').date(),
+                                   key=f'oe_deadline_{oid}')
             if st.button('保存修改', key=f'save_offering_{oid}'):
                 try:
                     cur = conn.cursor()
                     cur.execute("""UPDATE course_offering
                         SET semester=%s,max_students=%s,enroll_start_time=%s,
                         enroll_end_time=%s,grade_deadline=%s WHERE id=%s""",
-                                [new_sem, new_max, new_start, new_end, new_dl, oid])
+                                [new_sem, new_max, str(new_start), str(new_end), str(new_dl), oid])
                     conn.commit()
                     st.session_state.msg = ('success', '修改成功')
                     st.rerun()
