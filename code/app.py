@@ -296,13 +296,18 @@ def restore_page(conn):
 # ---- 管理类页面 ----
 
 def class_manage_page(conn):
+    # 显示上次操作的消息（跨 st.rerun 存活）
+    if st.session_state.get('msg'):
+        t, m = st.session_state.pop('msg')
+        st.toast(m, icon='✅')
+
     rows = class_list(conn)
     df = pd.DataFrame(rows, columns=['ID', '班级名', '年级', '专业', '状态'])
     st.dataframe(df, use_container_width=True)
 
     label_map = {f'{r[1]} ({r[2]}级 {r[3]})': r[0] for r in rows}
     labels = list(label_map.keys())
-    id_map = {r[0]: (r[1], r[2], r[3], r[4]) for r in rows}   # name,grade,major,status
+    id_map = {r[0]: (r[1], r[2], r[3], r[4]) for r in rows}
 
     mode = st.radio('操作', ['新增', '修改', '删除'], horizontal=True)
 
@@ -311,30 +316,34 @@ def class_manage_page(conn):
         grade = st.text_input('年级', key='ca_grade')
         major = st.text_input('专业', key='ca_major')
         if st.button('新增班级', key='btn_ca'):
-                cur = conn.cursor()
-                cur.execute("INSERT INTO class (name,grade,major) VALUES (%s,%s,%s)",
-                            [name, grade, major])
-                conn.commit()
-                st.toast('新增成功', icon='✅'); st.rerun()
+            cur = conn.cursor()
+            cur.execute("INSERT INTO class (name,grade,major) VALUES (%s,%s,%s)",
+                        [name, grade, major])
+            conn.commit()
+            st.session_state.msg = ('success', '新增成功')
+            for k in ['ca_name','ca_grade','ca_major']:
+                st.session_state.pop(k, None)
+            st.rerun()
 
     elif mode == '修改':
         sel = st.selectbox('选择要修改的班级', labels, key='class_edit_sel')
         if sel:
             class_id = label_map[sel]
             name, grade, major, status = id_map[class_id]
-            new_name = st.text_input('班级名', name, key='ce_name')
-            new_grade = st.text_input('年级', grade, key='ce_grade')
-            new_major = st.text_input('专业', major, key='ce_major')
+            new_name = st.text_input('班级名', value=name, key=f'ce_name_{class_id}')
+            new_grade = st.text_input('年级', value=grade, key=f'ce_grade_{class_id}')
+            new_major = st.text_input('专业', value=major, key=f'ce_major_{class_id}')
             new_status = st.selectbox('状态', ['在读', '毕业'],
                                      index=0 if status == '在读' else 1,
-                                     key='ce_status')
-            if st.button('保存修改', key='btn_save'):
+                                     key=f'ce_status_{class_id}')
+            if st.button('保存修改', key=f'save_class_{class_id}'):
                 cur = conn.cursor()
                 cur.execute("UPDATE class SET name=%s,grade=%s,major=%s,status=%s WHERE id=%s",
                             [new_name, new_grade, new_major,
                              1 if new_status == '在读' else 0, class_id])
                 conn.commit()
-                st.toast('修改成功', icon='✅'); st.rerun()
+                st.session_state.msg = ('success', '修改成功')
+                st.rerun()
 
     elif mode == '删除':
         sel = st.selectbox('选择要删除的班级', labels, key='class_del_sel')
@@ -343,10 +352,14 @@ def class_manage_page(conn):
             cur = conn.cursor()
             cur.execute("UPDATE class SET is_deleted=1 WHERE id=%s", [class_id])
             conn.commit()
-            st.toast('删除成功', icon='✅'); st.rerun()
+            st.session_state.msg = ('success', '删除成功')
+            st.rerun()
 
 
 def course_manage_page(conn):
+    if st.session_state.get('msg'):
+        t, m = st.session_state.pop('msg')
+        st.toast(m, icon='✅')
     rows = course_list(conn)
     df = pd.DataFrame(rows, columns=['ID', '课程名', '学分', '状态'])
     st.dataframe(df, use_container_width=True)
@@ -363,21 +376,24 @@ def course_manage_page(conn):
                 cur = conn.cursor()
                 cur.execute("INSERT INTO course (name,credit) VALUES (%s,%s)", [name, credit])
                 conn.commit()
-                st.toast('新增成功', icon='✅'); st.rerun()
+                st.session_state.msg = ('success', '新增成功')
+                for k in ['coa_name', 'coa_credit']:
+                    st.session_state.pop(k, None)
+                st.rerun()
 
     elif mode == '修改':
         sel = st.selectbox('选择要修改的课程', labels, key='course_edit_sel')
         if sel:
             cid = lmap[sel]
             name, credit = imap[cid]
-            new_name = st.text_input('课程名', name, key='coe_name')
-            new_credit = st.text_input('学分', str(credit), key='coe_credit')
-            if st.button('保存修改', key='btn_save'):
+            new_name = st.text_input('课程名', value=name, key=f'coe_name_{cid}')
+            new_credit = st.text_input('学分', value=str(credit), key=f'coe_credit_{cid}')
+            if st.button('保存修改', key=f'save_course_{cid}'):
                 cur = conn.cursor()
                 cur.execute("UPDATE course SET name=%s,credit=%s WHERE id=%s",
                             [new_name, new_credit, cid])
                 conn.commit()
-                st.toast('修改成功', icon='✅'); st.rerun()
+                st.session_state.msg = ('success', '修改成功'); st.rerun()
 
     elif mode == '删除':
         sel = st.selectbox('选择要删除的课程', labels, key='course_del_sel')
@@ -386,7 +402,7 @@ def course_manage_page(conn):
             cur = conn.cursor()
             cur.execute("UPDATE course SET is_deleted=1 WHERE id=%s", [cid])
             conn.commit()
-            st.toast('删除成功', icon='✅'); st.rerun()
+            st.session_state.msg = ('success', '删除成功'); st.rerun()
 
 
 def enrollment_manage_page(conn):
@@ -407,6 +423,9 @@ def enrollment_manage_page(conn):
 
 
 def teacher_manage_page(conn):
+    if st.session_state.get('msg'):
+        t, m = st.session_state.pop('msg')
+        st.toast(m, icon='✅')
     rows = teacher_full_list(conn)
     df = pd.DataFrame(rows, columns=['ID', '姓名', '工号', '职称', '电话', '状态'])
     st.dataframe(df, use_container_width=True)
@@ -427,7 +446,9 @@ def teacher_manage_page(conn):
             cur.execute("INSERT INTO teacher (name,no,title,phone) VALUES (%s,%s,%s,%s)",
                         [name, no, title or None, phone or None])
             conn.commit()
-            st.toast('新增成功', icon='✅')
+            st.session_state.msg = ('success', '新增成功')
+            for k in ['ta_name','ta_no','ta_title','ta_phone']:
+                st.session_state.pop(k, None)
             st.rerun()
 
     elif mode == '修改':
@@ -435,16 +456,16 @@ def teacher_manage_page(conn):
         if sel:
             tid = lmap[sel]
             name, no, title, phone = imap[tid]
-            new_name = st.text_input('姓名', name, key='te_name')
-            new_no = st.text_input('工号', no, key='te_no')
-            new_title = st.text_input('职称', title or '', key='te_title')
-            new_phone = st.text_input('电话', phone or '', key='te_phone')
-            if st.button('保存修改', key='btn_save'):
+            new_name = st.text_input('姓名', value=name, key=f'te_name_{tid}')
+            new_no = st.text_input('工号', value=no, key=f'te_no_{tid}')
+            new_title = st.text_input('职称', value=title or '', key=f'te_title_{tid}')
+            new_phone = st.text_input('电话', value=phone or '', key=f'te_phone_{tid}')
+            if st.button('保存修改', key=f'save_teacher_{tid}'):
                 cur = conn.cursor()
                 cur.execute("UPDATE teacher SET name=%s,no=%s,title=%s,phone=%s WHERE id=%s",
                             [new_name, new_no, new_title or None, new_phone or None, tid])
                 conn.commit()
-                st.toast('修改成功', icon='✅'); st.rerun()
+                st.session_state.msg = ('success', '修改成功'); st.rerun()
 
     elif mode == '删除':
         sel = st.selectbox('选择要删除的教师', labels, key='t_del')
@@ -453,10 +474,13 @@ def teacher_manage_page(conn):
             cur = conn.cursor()
             cur.execute("UPDATE teacher SET is_deleted=1 WHERE id=%s", [tid])
             conn.commit()
-            st.toast('删除成功', icon='✅'); st.rerun()
+            st.session_state.msg = ('success', '删除成功'); st.rerun()
 
 
 def student_manage_page(conn):
+    if st.session_state.get('msg'):
+        t, m = st.session_state.pop('msg')
+        st.toast(m, icon='✅')
     rows = student_full_list(conn)
     df = pd.DataFrame(rows, columns=['ID', '姓名', '学号', '班级ID', '班级', '状态'])
     st.dataframe(df, use_container_width=True)
@@ -479,7 +503,10 @@ def student_manage_page(conn):
                 cur.execute("INSERT INTO student (name,no,class_id) VALUES (%s,%s,%s)",
                             [name, no, clmap[cid]])
                 conn.commit()
-                st.toast('新增成功', icon='✅'); st.rerun()
+                st.session_state.msg = ('success', '新增成功')
+                for k in ['sa_name', 'sa_no', 'sa_class']:
+                    st.session_state.pop(k, None)
+                st.rerun()
 
     elif mode == '修改':
         sel = st.selectbox('选择要修改的学生', slabels, key='s_edit')
@@ -487,16 +514,16 @@ def student_manage_page(conn):
             stid = slmap[sel]
             name, no, cur_cid = simap[stid]
             cur_clabel = [k for k, v in clmap.items() if v == cur_cid][0]
-            new_name = st.text_input('姓名', name, key='se_name')
-            new_no = st.text_input('学号', no, key='se_no')
+            new_name = st.text_input('姓名', value=name, key=f'se_name_{stid}')
+            new_no = st.text_input('学号', value=no, key=f'se_no_{stid}')
             new_cid = st.selectbox('班级', clabels,
-                                   index=clabels.index(cur_clabel), key='se_class')
-            if st.button('保存修改', key='btn_save'):
+                                   index=clabels.index(cur_clabel), key=f'se_class_{stid}')
+            if st.button('保存修改', key=f'save_student_{stid}'):
                 cur = conn.cursor()
                 cur.execute("UPDATE student SET name=%s,no=%s,class_id=%s WHERE id=%s",
                             [new_name, new_no, clmap[new_cid], stid])
                 conn.commit()
-                st.toast('修改成功', icon='✅'); st.rerun()
+                st.session_state.msg = ('success', '修改成功'); st.rerun()
 
     elif mode == '删除':
         sel = st.selectbox('选择要删除的学生', slabels, key='s_del')
@@ -505,10 +532,13 @@ def student_manage_page(conn):
             cur = conn.cursor()
             cur.execute("UPDATE student SET is_deleted=1 WHERE id=%s", [stid])
             conn.commit()
-            st.toast('删除成功', icon='✅'); st.rerun()
+            st.session_state.msg = ('success', '删除成功'); st.rerun()
 
 
 def offering_manage_page(conn):
+    if st.session_state.get('msg'):
+        t, m = st.session_state.pop('msg')
+        st.toast(m, icon='✅')
     rows = offering_full_list(conn)
     df = pd.DataFrame(rows, columns=['ID', '课程', '教师', '学期', '已选', '上限', '状态',
                                      'course_id', 'teacher_id'])
@@ -526,15 +556,19 @@ def offering_manage_page(conn):
         teachers = teacher_course_teachers(conn, course_id)
         if not teachers:
             st.warning('该课程暂无能上的教师')
+            tid = st.selectbox('教师', ['（无可用教师）'], disabled=True, key='oa_teacher')
         else:
             tlmap = {f'{r[1]} ({r[2]})': r[0] for r in teachers}
             tid = st.selectbox('教师', list(tlmap.keys()), key='oa_teacher')
-            sem = st.text_input('学期', key='oa_sem')
-            max_s = st.number_input('上限', min_value=1, value=20, key='oa_max')
-            start = st.text_input('选课开始', key='oa_start')
-            end = st.text_input('选课截止', key='oa_end')
-            deadline = st.text_input('成绩截止', key='oa_deadline')
-            if st.button('新增排课', key='btn_oa'):
+        sem = st.text_input('学期', key='oa_sem')
+        max_s = st.number_input('上限', min_value=1, value=20, key='oa_max')
+        start = st.text_input('选课开始', key='oa_start')
+        end = st.text_input('选课截止', key='oa_end')
+        deadline = st.text_input('成绩截止', key='oa_deadline')
+        if st.button('新增排课', key='btn_oa'):
+            if not teachers:
+                st.error('该课程暂无能上的教师，请重新选择课程')
+            else:
                 cur = conn.cursor()
                 cur.execute("""INSERT INTO course_offering
                     (course_id,teacher_id,semester,max_students,
@@ -542,7 +576,11 @@ def offering_manage_page(conn):
                     VALUES (%s,%s,%s,%s,%s,%s,%s)""",
                             [course_id, tlmap[tid], sem, max_s, start, end, deadline])
                 conn.commit()
-                st.toast('新增成功', icon='✅'); st.rerun()
+                st.session_state.msg = ('success', '新增成功')
+                for k in ['oa_course', 'oa_teacher', 'oa_sem', 'oa_max', 'oa_start', 'oa_end', 'oa_deadline']:
+                    st.session_state.pop(k, None)
+                st.rerun()
+
     elif mode == '修改':
         sel = st.selectbox('选择要修改的排课', list(olmap.keys()), key='o_edit')
         if sel:
@@ -551,18 +589,19 @@ def offering_manage_page(conn):
             cur.execute("""SELECT semester, max_students, enroll_start_time,
                 enroll_end_time, grade_deadline FROM course_offering WHERE id=%s""", [oid])
             row = cur.fetchone()
-            new_sem = st.text_input('学期', str(row[0]), key='oe_sem')
-            new_max = st.number_input('上限', value=int(row[1]), key='oe_max')
-            new_start = st.text_input('选课开始', str(row[2]), key='oe_start')
-            new_end = st.text_input('选课截止', str(row[3]), key='oe_end')
-            new_dl = st.text_input('成绩截止', str(row[4]), key='oe_deadline')
-            if st.button('保存修改', key='btn_save'):
+            new_sem = st.text_input('学期', value=str(row[0]), key=f'oe_sem_{oid}')
+            new_max = st.number_input('上限', value=int(row[1]), key=f'oe_max_{oid}')
+            new_start = st.text_input('选课开始', value=str(row[2]), key=f'oe_start_{oid}')
+            new_end = st.text_input('选课截止', value=str(row[3]), key=f'oe_end_{oid}')
+            new_dl = st.text_input('成绩截止', value=str(row[4]), key=f'oe_deadline_{oid}')
+            if st.button('保存修改', key=f'save_offering_{oid}'):
+                cur = conn.cursor()
                 cur.execute("""UPDATE course_offering
                     SET semester=%s,max_students=%s,enroll_start_time=%s,
                     enroll_end_time=%s,grade_deadline=%s WHERE id=%s""",
                             [new_sem, new_max, new_start, new_end, new_dl, oid])
                 conn.commit()
-                st.toast('修改成功', icon='✅'); st.rerun()
+                st.session_state.msg = ('success', '修改成功'); st.rerun()
 
     elif mode == '删除':
         sel = st.selectbox('选择要删除的排课', list(olmap.keys()), key='o_del')
@@ -572,8 +611,7 @@ def offering_manage_page(conn):
             cur.execute(
                 "UPDATE course_offering SET is_deleted=1 WHERE id=%s", [oid])
             conn.commit()
-            st.toast('删除成功', icon='✅'); st.rerun()
-            st.rerun()
+            st.session_state.msg = ('success', '删除成功'); st.rerun()
 
 
 # 初始化
