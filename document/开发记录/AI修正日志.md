@@ -22,5 +22,10 @@
 | 2026-07-08          | ORDER BY course_name 不够                                                                | 改 `ORDER BY course_id, teacher_name`，同一门课排在一起                                    |
 | 2026-07-08          | import 路径 `from core.` 在 streamlit 下找不到模块                                       | 全部改为 `from CLI.core.` 绝对路径                                                             |
 | 2026-07-09 | 批量替换误伤 | 替换 `CLI.` → 空时同步改掉了日志中的 `CLI.` | 手动恢复日志中 3 处被误替换的 CL条目 |
+| 2026-07-09 | `st.tabs` 渲染全部 tab 导致管理页面组件互相干扰 | 改用 `st.radio`，每次只渲染当前模式 |
+| 2026-07-09 | `st.rerun()` 后 `st.success` 消息消失 | 改用 `st.toast` 弹窗，表单提交补回 `st.rerun()` |
+| 2026-07-09 | 恢复用 `DROP DATABASE` 失败后数据库残废 | 改用 `SET FOREIGN_KEY_CHECKS=0` 包裹 SQL，不删库 |
+| 2026-07-09 | 备份缺存储过程和触发器 | 加 `--routines --triggers --add-drop-table` |
+| 2026-07-09 | `@st.cache_resource` 缓存连接超时报 `InterfaceError` | 回退，不缓存数据库连接 |
 | 2026-07-08          | selectbox 用 lambda + next 遍历，代码又绕又慢                                            | 改用字典 `{label: id}` 映射，一行搞定                                                      |
 | 2026-07-08          | my_grades/semester_avg 没有返回数据模式                                                  | 加 `paged` 参数，`paged=False` 返回原始数据供 Streamlit 用                                 |

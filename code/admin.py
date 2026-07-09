@@ -148,6 +148,7 @@ def backup(conn):
     path = os.path.join(folder, filename)
     r = subprocess.run(
         ['mysqldump', '-u', 'root', '--databases', 'db_sms',
+         '--routines', '--triggers', '--add-drop-table',
          '--default-character-set=utf8mb4', '--result-file=' + path],
         capture_output=True, text=True
     )
@@ -162,14 +163,15 @@ def restore(conn):
     if not path or not os.path.exists(path):
         print(f'\n  ❌ 文件不存在: {path}')
         return
-    confirm = input(f'  确认恢复？这将覆盖当前数据！(y/N): ').strip().lower()
-    if confirm != 'y':
+    confirm_result = input(f'  确认恢复？这将覆盖当前数据！(y/N): ').strip().lower()
+    if confirm_result != 'y':
         print('  已取消')
         return
+    with open(path, 'r', encoding='utf-8') as f:
+        content = 'SET FOREIGN_KEY_CHECKS=0;\n' + f.read() + '\nSET FOREIGN_KEY_CHECKS=1;'
     r = subprocess.run(
         ['mysql', '-u', 'root', '--default-character-set=utf8mb4'],
-        stdin=open(path, 'r', encoding='utf-8'),
-        capture_output=True, text=True
+        input=content, capture_output=True, text=True
     )
     if r.returncode == 0:
         print(f'\n  ✅ 恢复成功！请重启程序')
