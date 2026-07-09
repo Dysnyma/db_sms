@@ -731,16 +731,18 @@ def _login_page():
 if 'user' not in st.session_state:
     st.session_state.user = None
 
-if not st.session_state.user:
-    _login_page()
-
-else:
-    role, uid, uname, uno = st.session_state.user
-
-    with st.sidebar:
+# 侧边栏 —— 身份信息
+with st.sidebar:
+    if st.session_state.user:
+        role, uid, uname, uno = st.session_state.user
         st.write(f'欢迎，{uname}')
         st.caption(f'角色：{role}')
 
+# 构建导航页面（始终调用 st.navigation，避免侧边栏残留）
+if not st.session_state.user:
+    pages = [st.Page(_login_page, title='登录', icon='🔑')]
+else:
+    role, uid, uname, uno = st.session_state.user
     if role == 'student':
         pages = [
             st.Page(_make_page(show_courses_page, uno), title='可选课程', icon='📚'),
@@ -779,9 +781,10 @@ else:
             ],
         }
 
-    pg = st.navigation(pages)
-    pg.run()
+pg = st.navigation(pages)
+pg.run()
 
+if st.session_state.user:
     with st.sidebar:
         st.divider()
         if st.button('🚪 退出登录'):
