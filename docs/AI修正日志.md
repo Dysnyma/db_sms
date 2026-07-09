@@ -21,3 +21,5 @@
 | 2026-07-09 | teacher_course_teachers 导入未使用 | 移除 |
 | 2026-07-09 | class_report/grade_roster 字典构建两次 + format_func 冗余 + 函数内 import | 字典去重/去冗余/import 移顶 |
 | 2026-07-09 | teacher_info_page 6个 metric 挤 4 列，c1/c2 覆盖导致工号+姓名丢失 | 改为两行 3 列 |
+| 2026-07-09 | 排课新增课程+教师改成 text_input 无法使用（不知道有哪些课程/教师） | 改回 selectbox |
+| 2026-07-09 | 排课日期字段手打 "1" 导致 MySQL 1292 datetime 报错 | 改为 date_input 日历选择器 |
