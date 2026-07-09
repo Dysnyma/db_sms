@@ -4,7 +4,8 @@ from student import show_courses, my_grades, semester_avg, enrolled_courses
 from teacher import teacher_offerings, offering_students
 from admin import (summary, class_list, roster_data, course_list, class_report_data,
                    grade_roster_data, teacher_info_data, teacher_list_data, enrollment_list,
-                   teacher_full_list, student_full_list, offering_full_list)
+                   teacher_full_list, student_full_list, offering_full_list,
+                   teacher_course_teachers)
 import csv
 import os
 import subprocess
@@ -548,48 +549,42 @@ def offering_manage_page(conn):
                                      'course_id', 'teacher_id'])
     st.dataframe(df[['ID', '课程', '教师', '学期', '已选', '上限', '状态']],
                  use_container_width=True)
+    courses = course_list(conn)
+    clmap = {f'{r[1]} ({r[2]}学分)': r[0] for r in courses}
     olmap = {f'#{r[0]} {r[1]}-{r[2]} ({r[3]})': r[0] for r in rows}
 
     mode = st.radio('操作', ['新增', '修改', '删除'], horizontal=True)
 
     if mode == '新增':
-        course_name = st.text_input('课程名', key='oa_course')
-        teacher_no = st.text_input('教师工号', key='oa_teacher')
+        cid = st.selectbox('课程', list(clmap.keys()), key='oa_course')
+        course_id = clmap[cid]
+        teachers = teacher_course_teachers(conn, course_id)
+        if not teachers:
+            st.warning('该课程暂无能上的教师')
+            tid = st.selectbox('教师', ['（无可用教师）'], disabled=True, key='oa_teacher')
+        else:
+            tlmap = {f'{r[1]} ({r[2]})': r[0] for r in teachers}
+            tid = st.selectbox('教师', list(tlmap.keys()), key='oa_teacher')
         sem = st.text_input('学期', key='oa_sem')
         max_s = st.text_input('上限', key='oa_max')
         start = st.text_input('选课开始', key='oa_start')
         end = st.text_input('选课截止', key='oa_end')
         deadline = st.text_input('成绩截止', key='oa_deadline')
         if st.button('新增排课', key='btn_oa'):
-            cur = conn.cursor()
-            # 查课程
-            cur.execute("SELECT id FROM course WHERE name=%s AND is_deleted=0", [course_name])
-            cr = cur.fetchone()
-            if not cr:
-                st.error('课程不存在')
-                st.stop()
-            # 查教师
-            cur.execute("SELECT id FROM teacher WHERE no=%s AND is_deleted=0", [teacher_no])
-            tr = cur.fetchone()
-            if not tr:
-                st.error('教师不存在')
-                st.stop()
-            # 查教师能否上这门课
-            cur.execute("SELECT 1 FROM teacher_course WHERE teacher_id=%s AND course_id=%s AND is_deleted=0",
-                        [tr[0], cr[0]])
-            if not cur.fetchone():
-                st.error('该教师不能上这门课')
-                st.stop()
-            cur.execute("""INSERT INTO course_offering
-                (course_id,teacher_id,semester,max_students,
-                 enroll_start_time,enroll_end_time,grade_deadline)
-                VALUES (%s,%s,%s,%s,%s,%s,%s)""",
-                        [cr[0], tr[0], sem, max_s, start, end, deadline])
-            conn.commit()
-            st.session_state.msg = ('success', '新增成功')
-            for k in ['oa_course', 'oa_teacher', 'oa_sem', 'oa_max', 'oa_start', 'oa_end', 'oa_deadline']:
-                st.session_state.pop(k, None)
-            st.rerun()
+            if not teachers:
+                st.error('该课程暂无能上的教师，请重新选择课程')
+            else:
+                cur = conn.cursor()
+                cur.execute("""INSERT INTO course_offering
+                    (course_id,teacher_id,semester,max_students,
+                     enroll_start_time,enroll_end_time,grade_deadline)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                            [course_id, tlmap[tid], sem, max_s, start, end, deadline])
+                conn.commit()
+                st.session_state.msg = ('success', '新增成功')
+                for k in ['oa_course', 'oa_teacher', 'oa_sem', 'oa_max', 'oa_start', 'oa_end', 'oa_deadline']:
+                    st.session_state.pop(k, None)
+                st.rerun()
 
     elif mode == '修改':
         sel = st.selectbox('选择要修改的排课', list(olmap.keys()), key='o_edit')
