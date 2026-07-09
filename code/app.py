@@ -93,6 +93,9 @@ def unenroll_page(conn, sno):
 
 
 def grade_input_page(conn, tno):
+    if st.session_state.get('msg'):
+        t, m = st.session_state.pop('msg')
+        st.toast(m, icon='✅')
     offerings = teacher_offerings(conn, tno)
     if not offerings:
         st.info('暂无排课')
@@ -118,13 +121,16 @@ def grade_input_page(conn, tno):
             conn.commit()
             cur.fetchall()
             cur.nextset()
-            st.success(f'{sno} → {score}')
+            st.session_state.msg = ('success', f'{sno} → {score}')
             st.rerun()
         except Exception as e:
             st.error(str(e))
 
 
 def batch_grade_page(conn, tno):
+    if st.session_state.get('msg'):
+        t, m = st.session_state.pop('msg')
+        st.toast(m, icon='✅')
     file = st.file_uploader('上传 CSV（plan_id, student_no, score）', type='csv')
     if not file:
         return
@@ -145,7 +151,7 @@ def batch_grade_page(conn, tno):
             except Exception as e:
                 fail += 1
                 st.warning(f"{row.get('student_no', '?')}: {e}")
-        st.success(f'完成：成功 {ok} 条，失败 {fail} 条')
+        st.session_state.msg = ('success', f'完成：成功 {ok} 条，失败 {fail} 条')
         st.rerun()
 
 
@@ -373,13 +379,13 @@ def course_manage_page(conn):
         name = st.text_input('课程名', key='coa_name')
         credit = st.text_input('学分', key='coa_credit')
         if st.button('新增课程', key='btn_coa'):
-                cur = conn.cursor()
-                cur.execute("INSERT INTO course (name,credit) VALUES (%s,%s)", [name, credit])
-                conn.commit()
-                st.session_state.msg = ('success', '新增成功')
-                for k in ['coa_name', 'coa_credit']:
-                    st.session_state.pop(k, None)
-                st.rerun()
+            cur = conn.cursor()
+            cur.execute("INSERT INTO course (name,credit) VALUES (%s,%s)", [name, credit])
+            conn.commit()
+            st.session_state.msg = ('success', '新增成功')
+            for k in ['coa_name', 'coa_credit']:
+                st.session_state.pop(k, None)
+            st.rerun()
 
     elif mode == '修改':
         sel = st.selectbox('选择要修改的课程', labels, key='course_edit_sel')
@@ -406,19 +412,24 @@ def course_manage_page(conn):
 
 
 def enrollment_manage_page(conn):
+    if st.session_state.get('msg'):
+        t, m = st.session_state.pop('msg')
+        st.toast(m, icon='✅')
     rows = enrollment_list(conn)
+    if not rows:
+        st.info('暂无选课记录')
+        return
     df = pd.DataFrame(
         rows, columns=['选课ID', '学生', '学号', '课程', '教师', '学期', '成绩'])
     st.dataframe(df, use_container_width=True)
 
-    eid = st.selectbox('选择要退选的记录',
-                       list({f'#{r[0]} {r[1]} → {r[3]} ({r[5]})': r[0] for r in rows}.keys()))
-    if eid and st.button('强制退选', type='primary'):
-        enr_id = {f'#{r[0]} {r[1]} → {r[3]} ({r[5]})': r[0] for r in rows}[eid]
+    emap = {f'#{r[0]} {r[1]} → {r[3]} ({r[5]})': r[0] for r in rows}
+    sel = st.selectbox('选择要退选的记录', list(emap.keys()))
+    if sel and st.button('强制退选', type='primary'):
         cur = conn.cursor()
-        cur.execute("UPDATE enrollment SET is_deleted=1 WHERE id=%s", [enr_id])
+        cur.execute("UPDATE enrollment SET is_deleted=1 WHERE id=%s", [emap[sel]])
         conn.commit()
-        st.success('退选成功')
+        st.session_state.msg = ('success', '退选成功')
         st.rerun()
 
 
@@ -499,14 +510,14 @@ def student_manage_page(conn):
         no = st.text_input('学号', key='sa_no')
         cid = st.selectbox('班级', clabels, key='sa_class')
         if st.button('新增学生', key='btn_sa'):
-                cur = conn.cursor()
-                cur.execute("INSERT INTO student (name,no,class_id) VALUES (%s,%s,%s)",
-                            [name, no, clmap[cid]])
-                conn.commit()
-                st.session_state.msg = ('success', '新增成功')
-                for k in ['sa_name', 'sa_no', 'sa_class']:
-                    st.session_state.pop(k, None)
-                st.rerun()
+            cur = conn.cursor()
+            cur.execute("INSERT INTO student (name,no,class_id) VALUES (%s,%s,%s)",
+                        [name, no, clmap[cid]])
+            conn.commit()
+            st.session_state.msg = ('success', '新增成功')
+            for k in ['sa_name', 'sa_no', 'sa_class']:
+                st.session_state.pop(k, None)
+            st.rerun()
 
     elif mode == '修改':
         sel = st.selectbox('选择要修改的学生', slabels, key='s_edit')
