@@ -4,8 +4,7 @@ from student import show_courses, my_grades, semester_avg, enrolled_courses
 from teacher import teacher_offerings, offering_students
 from admin import (summary, class_list, roster_data, course_list, class_report_data,
                    grade_roster_data, teacher_info_data, teacher_list_data, enrollment_list,
-                   teacher_full_list, student_full_list, offering_full_list,
-                   teacher_course_teachers)
+                   teacher_full_list, student_full_list, offering_full_list)
 import csv
 import pandas as pd
 st.title('学生成绩管理系统')
@@ -607,7 +606,7 @@ def offering_manage_page(conn):
                 enroll_end_time, grade_deadline FROM course_offering WHERE id=%s""", [oid])
             row = cur.fetchone()
             new_sem = st.text_input('学期', value=str(row[0]), key=f'oe_sem_{oid}')
-            new_max = st.number_input('上限', value=int(row[1]), key=f'oe_max_{oid}')
+            new_max = st.text_input('上限', value=str(row[1]), key=f'oe_max_{oid}')
             new_start = st.text_input('选课开始', value=str(row[2]), key=f'oe_start_{oid}')
             new_end = st.text_input('选课截止', value=str(row[3]), key=f'oe_end_{oid}')
             new_dl = st.text_input('成绩截止', value=str(row[4]), key=f'oe_deadline_{oid}')
