@@ -1,7 +1,7 @@
 """教师功能"""
 import csv
 import os
-from core.utils import cls, pause, hr, input_choice, render_menu, show_table, Paginator
+from CLI.core.utils import cls, pause, hr, input_choice, render_menu, show_table, Paginator
 
 
 def menu(conn, tid, tname, tno):
@@ -199,3 +199,29 @@ def my_students(conn, tid, tname):
         if c == 'q': break
         elif c == 'n': pager.next()
         elif c == 'p': pager.prev()
+
+
+def teacher_offerings(conn, tno):
+    """返回教师的排课列表（供 Streamlit 用）"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT co.id, c.name, co.semester, co.current_students, co.max_students
+        FROM course_offering co
+        JOIN course c ON co.course_id = c.id
+        WHERE co.teacher_id = fn_get_teacher_id(%s) AND co.is_deleted = 0
+        ORDER BY co.semester DESC, c.name
+    """, [tno])
+    return cur.fetchall()
+
+
+def offering_students(conn, plan_id):
+    """返回某排课的学生列表（供 Streamlit 用）"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.no, s.name, e.score
+        FROM enrollment e
+        JOIN student s ON e.student_id = s.id
+        WHERE e.offering_id = %s AND e.is_deleted = 0
+        ORDER BY s.no
+    """, [plan_id])
+    return cur.fetchall()

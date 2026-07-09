@@ -75,7 +75,7 @@ def unenroll(conn, sno):
         print(f'\n  ❌ {e}')
 
 
-def my_grades(conn, sid, sname):
+def my_grades(conn, sid, sname, paged=True):
     cur = conn.cursor()
     cur.execute("""
         SELECT c.name, t.name, co.semester, e.score
@@ -87,12 +87,15 @@ def my_grades(conn, sid, sname):
         ORDER BY co.semester, c.name
     """, [sid])
     rows = cur.fetchall()
+    cur.execute("SELECT weighted_score, gpa FROM student WHERE id = %s", [sid])
+    ws, gpa = cur.fetchone()
+
+    if not paged:
+        return rows, ws, gpa
+
     if not rows:
         print('\n  暂无成绩')
         return
-
-    cur.execute("SELECT weighted_score, gpa FROM student WHERE id = %s", [sid])
-    ws, gpa = cur.fetchone()
 
     pager = Paginator(rows)
     while True:
@@ -112,16 +115,35 @@ def my_grades(conn, sid, sname):
             pager.prev()
 
 
-def semester_avg(conn, sno):
-    sem = input('  请输入学期 (如 2024-2025-1): ').strip()
+def semester_avg(conn, sno, sem=None, paged=True):
+    if sem is None:
+        sem = input('  请输入学期 (如 2024-2025-1): ').strip()
     if not sem:
-        return
+        return None
     with conn.cursor() as cur:
         cur.callproc('sp_student_semester_avg', [sno, sem])
         rows = cur.fetchall()
         cur.nextset()
+    if not paged:
+        return rows
     if not rows:
         print(f'\n  {sem} 暂无成绩')
         return
     for r in rows:
         print(f'\n  学期: {r[2]}  课程数: {r[3]}  均分: {r[4]}')
+
+
+def enrolled_courses(conn, sno):
+    """返回学生已选课程（供 Streamlit 用）"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT co.id, c.name, t.name, co.semester, co.enroll_end_time
+        FROM enrollment e
+        JOIN course_offering co ON e.offering_id = co.id
+        JOIN course c ON co.course_id = c.id
+        JOIN teacher t ON co.teacher_id = t.id
+        WHERE e.student_id = fn_get_student_id(%s)
+          AND e.is_deleted = 0
+        ORDER BY co.semester, c.name
+    """, [sno])
+    return cur.fetchall()

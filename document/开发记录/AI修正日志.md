@@ -20,3 +20,6 @@
 | 2026-07-08 | 各 menu 数据太多一次全显示 | 封装 Paginator 类，5 个管理菜单 + roster/teacher_list/my_grades/show_courses 全用分页 |
 | 2026-07-08 | 教师录成绩要盲打排课 ID | 改为两步分页：先选排课（带已选/上限）→ 循环录成绩，录完自动刷新列表 |
 | 2026-07-08 | ORDER BY course_name 不够 | 改 `ORDER BY course_id, teacher_name`，同一门课排在一起 |
+| 2026-07-08 | import 路径 `from core.` 在 streamlit 下找不到模块 | 全部改为 `from CLI.core.` 绝对路径 |
+| 2026-07-08 | selectbox 用 lambda + next 遍历，代码又绕又慢 | 改用字典 `{label: id}` 映射，一行搞定 |
+| 2026-07-08 | my_grades/semester_avg 没有返回数据模式 | 加 `paged` 参数，`paged=False` 返回原始数据供 Streamlit 用 |

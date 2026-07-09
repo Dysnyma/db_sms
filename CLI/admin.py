@@ -2,7 +2,7 @@
 import os
 import subprocess
 from datetime import datetime
-from core.utils import hr, render_menu, show_table, cls, confirm, Paginator
+from CLI.core.utils import hr, render_menu, show_table, cls, confirm, Paginator
 
 
 def menu(conn):
