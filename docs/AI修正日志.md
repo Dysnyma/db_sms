@@ -19,3 +19,4 @@
 | 2026-07-09 | enrollment_manage 字典构建两次 | 提取为 emap 变量 |
 | 2026-07-09 | 排课管理新增用 selectbox 下拉 + number_input 带初始值，风格突兀 | 改为纯 text_input，校验移入按钮逻辑 |
 | 2026-07-09 | teacher_course_teachers 导入未使用 | 移除 |
+| 2026-07-09 | class_report/grade_roster 字典构建两次 + format_func 冗余 + 函数内 import | 字典去重/去冗余/import 移顶 |
