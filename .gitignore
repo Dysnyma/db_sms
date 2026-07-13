@@ -3,6 +3,6 @@ __pycache__/
 *.pyo
 .claude/
 node_modules/
-document/上交/
+document/submission/
 archive/PowerDesigner 16.5.zip
 venv/
