@@ -5,6 +5,7 @@ from core.utils import cls, render_menu, show_table, Paginator
 
 
 def menu(conn, sid, sname, sno):
+    """显示功能菜单并循环等待用户选择"""
     # lambda c: xxx(c, sno) 的意思是：
     # "包装一个只收 c(onn) 的函数，内部调用 xxx(c, sno)"
     # 这样 render_menu 统一传 func(conn) 时，sno 已经被填好了
@@ -21,6 +22,7 @@ def menu(conn, sid, sname, sno):
 
 
 def show_courses(conn, sno, paged=True):
+    """查询当前学生的可选课程列表"""
     with conn.cursor() as cur:
         cur.callproc("sp_show_courses", [sno])
         rows = cur.fetchall()
@@ -51,6 +53,7 @@ def show_courses(conn, sno, paged=True):
 
 
 def enroll(conn, sno):
+    """学生选课"""
     rows = show_courses(conn, sno, paged=False)
     if not rows:
         return
@@ -67,6 +70,7 @@ def enroll(conn, sno):
 
 
 def unenroll(conn, sno):
+    """学生退选"""
     plan_id = input("  请输入要退的排课ID (0=取消): ").strip()
     if plan_id == "0" or not plan_id:
         return
@@ -80,6 +84,7 @@ def unenroll(conn, sno):
 
 
 def my_grades(conn, sid, _sname, paged=True):
+    """查询当前学生的成绩列表及学籍分、绩点分"""
     cur = conn.cursor()
     cur.execute(
         """
@@ -127,6 +132,7 @@ def my_grades(conn, sid, _sname, paged=True):
 
 
 def semester_avg(conn, sno, sem=None, paged=True):
+    """查询当前学期平均分"""
     if sem is None:
         sem = input("  请输入学期 (如 2024-2025-1): ").strip()
     if not sem:

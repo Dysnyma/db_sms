@@ -32,10 +32,12 @@ def pause():
 
 
 def hr():
+    """打印分隔线"""
     print("─" * 60)
 
 
 def input_choice(prompt):
+    """获取用户数字选择"""
     sys.stdout.write(prompt)
     sys.stdout.flush()
     try:
@@ -75,32 +77,39 @@ class Paginator:
     """分页器：只管切片和翻页，不管显示"""
 
     def __init__(self, rows, per_page=10):
+        """初始化分页器"""
         self.rows = rows
         self.per_page = per_page
         self.page = 0
 
     @property
     def items(self):
+        """当前页数据切片"""
         start = self.page * self.per_page
         return self.rows[start : start + self.per_page]
 
     @property
     def total(self):
+        """总页数"""
         return (len(self.rows) + self.per_page - 1) // self.per_page
 
     @property
     def info(self):
+        """分页信息文本"""
         return f"第 {self.page + 1}/{self.total} 页，共 {len(self.rows)} 条"
 
     def next(self):
+        """下一页"""
         if self.page < self.total - 1:
             self.page += 1
 
     def prev(self):
+        """上一页"""
         if self.page > 0:
             self.page -= 1
 
     def reset(self):
+        """重置到第一页"""
         self.page = 0
 
 

@@ -7,5 +7,6 @@
     },
     "sql-formatter.dialect": "mysql",
     "sql-formatter.uppercase": true,
-    "sql-formatter.linesBetweenQueries": 2
+    "sql-formatter.linesBetweenQueries": 2,
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

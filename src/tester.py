@@ -1,8 +1,8 @@
 """测试员 —— 身份切换 → 调真实菜单，零重复代码"""
 
 from core.utils import cls, show_table
-from student import menu as student_menu
-from teacher import menu as teacher_menu
+from student_tui import menu as student_menu
+from teacher_tui import menu as teacher_menu
 from admin import menu as admin_menu
 
 
@@ -64,6 +64,7 @@ def _pick_teacher(conn):
 
 
 def menu(conn, tid, tname, tno):
+    """显示功能菜单并循环等待用户选择"""
     while True:
         cls()
         print()

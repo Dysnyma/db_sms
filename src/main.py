@@ -3,13 +3,14 @@
 from core.config import connect
 from core.utils import cls, pause
 from core.auth import login
-import student as student
-import teacher as teacher
+import student_tui as student
+import teacher_tui as teacher
 import admin as admin
 import tester as tester
 
 
 def main():
+    """程序入口：登录循环 → 根据角色分发到对应菜单"""
     conn = connect()
     cls()
     print()

@@ -8,6 +8,7 @@ from core.utils import hr, render_menu, show_table, cls, confirm, Paginator
 
 
 def menu(conn):
+    """显示功能菜单并循环等待用户选择"""
     _items = [
         ("数据概览", summary),
         ("班级学生名单", roster),
@@ -30,6 +31,7 @@ def menu(conn):
 
 
 def summary(conn, paged=True):
+    """返回各数据表的统计计数（班级、学生、课程、教师、排课、选课）"""
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM class WHERE is_deleted = 0")
     c1 = cur.fetchone()[0]
@@ -59,6 +61,7 @@ def summary(conn, paged=True):
 
 
 def roster(conn):
+    """班级学生名单：选择班级后显示学生列表"""
     cid = input("  请输入班级ID: ").strip()
     if not cid:
         return
@@ -86,6 +89,7 @@ def roster(conn):
 
 
 def class_report(conn):
+    """班级成绩统计：按班级和课程查看成绩汇总"""
     cid = input("  请输入班级ID: ").strip()
     gid = input("  请输入课程ID: ").strip()
     if not cid or not gid:
@@ -105,6 +109,7 @@ def class_report(conn):
 
 
 def teacher_list(conn):
+    """教师列表：显示所有教师基本信息"""
     with conn.cursor() as cur:
         cur.callproc("sp_teacher_list")
         rows = cur.fetchall()
@@ -132,6 +137,7 @@ def teacher_list(conn):
 
 
 def teacher_info(conn):
+    """教师信息：按工号查询教师详情"""
     tno = input("  请输入教师工号: ").strip()
     if not tno:
         return
@@ -150,6 +156,7 @@ def teacher_info(conn):
 
 
 def backup(_conn):
+    """备份数据库到 SQL 文件（通过 mysqldump）"""
     folder = input("  备份到哪个文件夹 (默认 backup/): ").strip()
     if not folder:
         folder = "backup"
@@ -182,6 +189,7 @@ def backup(_conn):
 
 
 def restore(_conn):
+    """从 SQL 文件恢复数据库（通过 mysql 命令导入）"""
     path = input("  SQL 文件路径: ").strip()
     if not path or not os.path.exists(path):
         print(f"\n  ❌ 文件不存在: {path}")
@@ -210,6 +218,7 @@ def restore(_conn):
 
 
 def class_menu(conn):
+    """班级管理菜单：列表显示 + 增/改/删入口"""
     pager = None
     while True:
         cls()
@@ -247,6 +256,7 @@ def class_menu(conn):
 
 
 def class_add(conn):
+    """新增班级"""
     cls()
     print(" —— 新增班级 ——\n")
     name = input(" 班级名：").strip()
@@ -270,11 +280,13 @@ def class_add(conn):
             conn.commit()
         print(f"\n  ✅ 新增成功: {name}")
     except pymysql.Error as e:
+        conn.rollback()
         print(f"\n  ❌ 新增失败: {e}")
     cls()
 
 
 def class_edit(conn):
+    """修改班级信息"""
     cid = input("  要修改的班级ID: ").strip()
     if not cid:
         return
@@ -324,6 +336,7 @@ def class_edit(conn):
 
 
 def class_delete(conn):
+    """删除班级（逻辑删除）"""
     cid = input("  要删除的班级ID: ").strip()
     if not cid:
         return
@@ -343,10 +356,12 @@ def class_delete(conn):
                 conn.commit()
             print(f"\n  ✅ 已删除: {row[0]}")
         except pymysql.Error as e:
+            conn.rollback()
             print(f"\n  ❌ 删除失败: {e}")
 
 
 def course_menu(conn):
+    """课程管理菜单：列表显示 + 增/改/删入口"""
     pager = None
     while True:
         cls()
@@ -384,6 +399,7 @@ def course_menu(conn):
 
 
 def course_add(conn):
+    """新增课程（含已删除恢复）"""
     cls()
     print(" —— 新增课程 ——\n")
     name = input(" 课程名：").strip()
@@ -402,12 +418,14 @@ def course_add(conn):
             conn.commit()
         print(f"\n  ✅ 新增成功: {name}")
     except pymysql.Error as e:
+        conn.rollback()
         print(f"\n  ❌ 新增失败: {e}")
     cls()
     return
 
 
 def course_edit(conn):
+    """修改课程信息"""
     cid = input("  要修改的课程ID: ").strip()
     if not cid:
         return
@@ -455,6 +473,7 @@ def course_edit(conn):
 
 
 def course_delete(conn):
+    """删除课程（逻辑删除）"""
     cid = input("  要删除的课程ID: ").strip()
     if not cid:
         return
@@ -474,6 +493,7 @@ def course_delete(conn):
                 conn.commit()
             print(f"\n  ✅ 已删除: {row[0]}")
         except pymysql.Error as e:
+            conn.rollback()
             print(f"\n  ❌ 删除失败: {e}")
     return
 
@@ -484,6 +504,7 @@ def course_delete(conn):
 
 
 def teacher_menu(conn):
+    """教师管理菜单：列表显示 + 增/改/删入口"""
     pager = None
     while True:
         cls()
@@ -521,6 +542,7 @@ def teacher_menu(conn):
 
 
 def teacher_add(conn):
+    """新增教师"""
     cls()
     print(" —— 新增教师 ——\n")
     name = input(" 姓名：").strip()
@@ -541,10 +563,12 @@ def teacher_add(conn):
             conn.commit()
         print(f"\n  ✅ 新增成功: {name}")
     except pymysql.Error as e:
+        conn.rollback()
         print(f"\n  ❌ 新增失败: {e}")
 
 
 def teacher_edit(conn):
+    """修改教师信息"""
     cid = input("  要修改的教师ID: ").strip()
     if not cid:
         return
@@ -594,6 +618,7 @@ def teacher_edit(conn):
 
 
 def teacher_delete(conn):
+    """删除教师（逻辑删除）"""
     cid = input("  要删除的教师ID: ").strip()
     if not cid:
         return
@@ -613,6 +638,7 @@ def teacher_delete(conn):
                 conn.commit()
             print(f"\n  ✅ 已删除: {row[0]}")
         except pymysql.Error as e:
+            conn.rollback()
             print(f"\n  ❌ 删除失败: {e}")
 
 
@@ -622,6 +648,7 @@ def teacher_delete(conn):
 
 
 def student_menu(conn):
+    """学生管理菜单：列表显示 + 增/改/删入口"""
     pager = None
     while True:
         cls()
@@ -660,6 +687,7 @@ def student_menu(conn):
 
 
 def student_add(conn):
+    """新增学生（含已删除恢复）"""
     cls()
     print(" —— 新增学生 ——\n")
     no = input(" 学号：").strip()
@@ -686,10 +714,12 @@ def student_add(conn):
             conn.commit()
         print(f"\n  ✅ 新增成功: {name}")
     except pymysql.Error as e:
+        conn.rollback()
         print(f"\n  ❌ 新增失败: {e}")
 
 
 def student_edit(conn):
+    """修改学生信息"""
     cid = input("  要修改的学生ID: ").strip()
     if not cid:
         return
@@ -744,6 +774,7 @@ def student_edit(conn):
 
 
 def student_delete(conn):
+    """删除学生（逻辑删除）"""
     cid = input("  要删除的学生ID: ").strip()
     if not cid:
         return
@@ -763,6 +794,7 @@ def student_delete(conn):
                 conn.commit()
             print(f"\n  ✅ 已删除: {row[0]}")
         except pymysql.Error as e:
+            conn.rollback()
             print(f"\n  ❌ 删除失败: {e}")
 
 
@@ -772,6 +804,7 @@ def student_delete(conn):
 
 
 def offering_menu(conn):
+    """排课管理菜单：列表显示 + 增/改/删入口"""
     pager = None
     while True:
         cls()
@@ -814,6 +847,7 @@ def offering_menu(conn):
 
 
 def offering_add(conn):
+    """新增排课"""
     cls()
     print(" —— 新增排课 ——\n")
     cur = conn.cursor()
@@ -875,10 +909,12 @@ def offering_add(conn):
             conn.commit()
         print("\n  ✅ 新增成功")
     except pymysql.Error as e:
+        conn.rollback()
         print(f"\n  ❌ 新增失败: {e}")
 
 
 def offering_edit(conn):
+    """修改排课信息"""
     cid = input("  要修改的排课ID: ").strip()
     if not cid:
         return
@@ -936,6 +972,7 @@ def offering_edit(conn):
 
 
 def offering_delete(conn):
+    """删除排课（逻辑删除）"""
     cid = input("  要删除的排课ID: ").strip()
     if not cid:
         return
@@ -966,6 +1003,7 @@ def offering_delete(conn):
                 conn.commit()
             print("\n  ✅ 已删除")
         except pymysql.Error as e:
+            conn.rollback()
             print(f"\n  ❌ 删除失败: {e}")
 
 
@@ -975,6 +1013,7 @@ def offering_delete(conn):
 
 
 def enrollment_menu(conn):
+    """选课管理菜单：列表显示 + 强制退选"""
     pager = None
     while True:
         cls()
@@ -1015,6 +1054,7 @@ def enrollment_menu(conn):
 
 
 def enrollment_delete(conn):
+    """强制退选"""
     eid = input("  要退选的选课ID: ").strip()
     if not eid:
         return
@@ -1046,6 +1086,7 @@ def enrollment_delete(conn):
                 conn.commit()
             print(f"\n  ✅ 已退选: {row[0]}")
         except pymysql.Error as e:
+            conn.rollback()
             print(f"\n  ❌ 操作失败: {e}")
 
 

@@ -6,3 +6,5 @@ node_modules/
 document/submission/
 archive/PowerDesigner 16.5.zip
 venv/
+backup/
+.agents/

@@ -7,6 +7,7 @@ from core.utils import cls, hr, render_menu, show_table, Paginator
 
 
 def menu(conn, tid, tname, tno):
+    """显示功能菜单并循环等待用户选择"""
     _items = [
         ("录入成绩", lambda c: grade_input(c, tno)),
         ("批量录入 (CSV)", lambda c: batch_grade_input(c, tno)),
@@ -183,6 +184,7 @@ def batch_grade_input(conn, tno, csv_path=None):
 
 
 def my_students(conn, tid, tname):
+    """查看当前教师指定排课的学生列表与成绩"""
     cur = conn.cursor()
     cur.execute(
         """

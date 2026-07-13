@@ -23,10 +23,12 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data"
 
 
 def connect():
+    """创建并返回数据库连接"""
     return pymysql.connect(**DB_CONFIG)
 
 
 def log(msg):
+    """打印带时间戳的日志"""
     print(f'  [{datetime.now().strftime("%H:%M:%S")}] {msg}')
 
 
@@ -43,6 +45,7 @@ def import_csv(cursor, filepath, sql, *col_keys):
 
 
 def main():
+    """程序入口：登录循环 → 根据角色分发到对应菜单"""
     conn = connect()
     cursor = conn.cursor()
     start = datetime.now()
