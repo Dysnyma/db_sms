@@ -386,13 +386,29 @@ def course_manage_page(conn):
         credit = st.text_input('学分', key='coa_credit')
         if st.button('新增课程', key='btn_coa'):
             cur = conn.cursor()
+            # 先检查该课程名是否已存在（含已删除的）
             cur.execute(
-                "INSERT INTO course (name,credit) VALUES (%s,%s)", [name, credit])
-            conn.commit()
-            st.session_state.msg = ('success', '新增成功')
-            for k in ['coa_name', 'coa_credit']:
-                st.session_state.pop(k, None)
-            st.rerun()
+                "SELECT id, is_deleted FROM course WHERE name = %s", [name])
+            existing = cur.fetchone()
+            if existing:
+                if existing[1] == 1:
+                    # 已逻辑删除 → 恢复
+                    cur.execute(
+                        "UPDATE course SET is_deleted=0, credit=%s, status=1 WHERE id=%s",
+                        [credit, existing[0]])
+                    conn.commit()
+                    st.session_state.msg = ('success', '课程已恢复（之前已删除，现已还原）')
+                else:
+                    st.warning('课程名已存在，请使用其他名称')
+            else:
+                cur.execute(
+                    "INSERT INTO course (name,credit) VALUES (%s,%s)", [name, credit])
+                conn.commit()
+                st.session_state.msg = ('success', '新增成功')
+            if st.session_state.get('msg'):
+                for k in ['coa_name', 'coa_credit']:
+                    st.session_state.pop(k, None)
+                st.rerun()
 
     elif mode == '修改':
         sel = st.selectbox('选择要修改的课程', labels, key='course_edit_sel')
@@ -404,6 +420,18 @@ def course_manage_page(conn):
                 '学分', value=str(credit), key=f'coe_credit_{cid}')
             if st.button('保存修改', key=f'save_course_{cid}'):
                 cur = conn.cursor()
+                # 如果改了名称，检查新名称是否冲突
+                if new_name != name:
+                    cur.execute(
+                        "SELECT id, is_deleted FROM course WHERE name = %s AND id != %s",
+                        [new_name, cid])
+                    dup = cur.fetchone()
+                    if dup:
+                        if dup[1] == 1:
+                            st.warning('该课程名已被删除的课程占用，请先在数据库手动处理')
+                        else:
+                            st.warning('课程名已存在，请使用其他名称')
+                        st.stop()
                 cur.execute("UPDATE course SET name=%s,credit=%s WHERE id=%s",
                             [new_name, new_credit, cid])
                 conn.commit()

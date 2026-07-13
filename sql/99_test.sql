@@ -1,0 +1,3 @@
+USE db_sms;
+
+EXPLAIN SELECT * FROM student WHERE no = '202210101';
