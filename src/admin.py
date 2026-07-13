@@ -3,6 +3,7 @@
 import os
 import subprocess
 from datetime import datetime
+import pymysql
 from core.utils import hr, render_menu, show_table, cls, confirm, Paginator
 
 
@@ -148,7 +149,7 @@ def teacher_info(conn):
     hr()
 
 
-def backup(conn):
+def backup(_conn):
     folder = input("  备份到哪个文件夹 (默认 backup/): ").strip()
     if not folder:
         folder = "backup"
@@ -180,7 +181,7 @@ def backup(conn):
         print(f"\n  ❌ 备份失败: {r.stderr.strip()[:200]}")
 
 
-def restore(conn):
+def restore(_conn):
     path = input("  SQL 文件路径: ").strip()
     if not path or not os.path.exists(path):
         print(f"\n  ❌ 文件不存在: {path}")
@@ -268,7 +269,7 @@ def class_add(conn):
             )
             conn.commit()
         print(f"\n  ✅ 新增成功: {name}")
-    except Exception as e:
+    except pymysql.Error as e:
         print(f"\n  ❌ 新增失败: {e}")
     cls()
 
@@ -341,7 +342,7 @@ def class_delete(conn):
                 cur.execute("UPDATE class SET is_deleted = 1 WHERE id = %s", [cid])
                 conn.commit()
             print(f"\n  ✅ 已删除: {row[0]}")
-        except Exception as e:
+        except pymysql.Error as e:
             print(f"\n  ❌ 删除失败: {e}")
 
 
@@ -400,7 +401,7 @@ def course_add(conn):
             )
             conn.commit()
         print(f"\n  ✅ 新增成功: {name}")
-    except Exception as e:
+    except pymysql.Error as e:
         print(f"\n  ❌ 新增失败: {e}")
     cls()
     return
@@ -472,7 +473,7 @@ def course_delete(conn):
                 cur.execute("UPDATE course SET is_deleted = 1 WHERE id = %s", [cid])
                 conn.commit()
             print(f"\n  ✅ 已删除: {row[0]}")
-        except Exception as e:
+        except pymysql.Error as e:
             print(f"\n  ❌ 删除失败: {e}")
     return
 
@@ -539,7 +540,7 @@ def teacher_add(conn):
             )
             conn.commit()
         print(f"\n  ✅ 新增成功: {name}")
-    except Exception as e:
+    except pymysql.Error as e:
         print(f"\n  ❌ 新增失败: {e}")
 
 
@@ -611,7 +612,7 @@ def teacher_delete(conn):
                 cur.execute("UPDATE teacher SET is_deleted = 1 WHERE id = %s", [cid])
                 conn.commit()
             print(f"\n  ✅ 已删除: {row[0]}")
-        except Exception as e:
+        except pymysql.Error as e:
             print(f"\n  ❌ 删除失败: {e}")
 
 
@@ -684,7 +685,7 @@ def student_add(conn):
             )
             conn.commit()
         print(f"\n  ✅ 新增成功: {name}")
-    except Exception as e:
+    except pymysql.Error as e:
         print(f"\n  ❌ 新增失败: {e}")
 
 
@@ -761,7 +762,7 @@ def student_delete(conn):
                 cur.execute("UPDATE student SET is_deleted = 1 WHERE id = %s", [cid])
                 conn.commit()
             print(f"\n  ✅ 已删除: {row[0]}")
-        except Exception as e:
+        except pymysql.Error as e:
             print(f"\n  ❌ 删除失败: {e}")
 
 
@@ -873,7 +874,7 @@ def offering_add(conn):
             )
             conn.commit()
         print("\n  ✅ 新增成功")
-    except Exception as e:
+    except pymysql.Error as e:
         print(f"\n  ❌ 新增失败: {e}")
 
 
@@ -964,7 +965,7 @@ def offering_delete(conn):
                 )
                 conn.commit()
             print("\n  ✅ 已删除")
-        except Exception as e:
+        except pymysql.Error as e:
             print(f"\n  ❌ 删除失败: {e}")
 
 
@@ -1044,7 +1045,7 @@ def enrollment_delete(conn):
                 )
                 conn.commit()
             print(f"\n  ✅ 已退选: {row[0]}")
-        except Exception as e:
+        except pymysql.Error as e:
             print(f"\n  ❌ 操作失败: {e}")
 
 

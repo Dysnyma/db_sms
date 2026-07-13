@@ -2,6 +2,7 @@
 
 import csv
 import os
+import pymysql
 from core.utils import cls, hr, render_menu, show_table, Paginator
 
 
@@ -136,7 +137,7 @@ def grade_input(conn, tno):
                     )
                     students = cur.fetchall()
                     pager = Paginator(students)
-                except Exception as e:
+                except pymysql.Error as e:
                     print(f"\n  ❌ {e}")
                     input("\n  按回车...")
 
@@ -173,11 +174,12 @@ def batch_grade_input(conn, tno, csv_path=None):
                     cur.nextset()
                 print(f"  ✅ 第{i}行 {student_no} → {score}")
                 ok += 1
-            except Exception as e:
+            except (pymysql.Error, ValueError, csv.Error) as e:
                 print(f"  ❌ 第{i}行 {student_no}: {e}")
                 fail += 1
 
     print(f"\n  完成：成功 {ok} 条，失败 {fail} 条")
+    input("\n  按回车继续...")
 
 
 def my_students(conn, tid, tname):

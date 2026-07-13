@@ -1,5 +1,6 @@
 """学生功能"""
 
+import pymysql
 from core.utils import cls, render_menu, show_table, Paginator
 
 
@@ -61,7 +62,7 @@ def enroll(conn, sno):
             cur.callproc("sp_enroll", [sno, int(plan_id)])
             conn.commit()
             print(f"\n  ✅ {cur.fetchone()[0]}")
-    except Exception as e:
+    except pymysql.Error as e:
         print(f"\n  ❌ {e}")
 
 
@@ -74,11 +75,11 @@ def unenroll(conn, sno):
             cur.callproc("sp_unenroll", [sno, int(plan_id)])
             conn.commit()
             print(f"\n  ✅ {cur.fetchone()[0]}")
-    except Exception as e:
+    except pymysql.Error as e:
         print(f"\n  ❌ {e}")
 
 
-def my_grades(conn, sid, sname, paged=True):
+def my_grades(conn, sid, _sname, paged=True):
     cur = conn.cursor()
     cur.execute(
         """

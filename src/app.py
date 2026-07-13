@@ -3,6 +3,7 @@ from datetime import datetime
 import subprocess
 import os
 import csv
+import pymysql
 from admin import (
     summary,
     class_list,
@@ -102,7 +103,7 @@ def enroll_page(conn, sno):
             cur.fetchall()
             cur.nextset()
             st.success("选课成功")
-        except Exception as e:
+        except pymysql.Error as e:
             st.error(str(e))
 
 
@@ -124,14 +125,14 @@ def unenroll_page(conn, sno):
             cur.fetchall()
             cur.nextset()
             st.success("退选成功")
-        except Exception as e:
+        except pymysql.Error as e:
             st.error(str(e))
 
 
 def grade_input_page(conn, tno):
     if st.session_state.get("msg"):
-        t, m = st.session_state.pop("msg")
-        st.toast(m, icon="✅")
+        _, m = st.session_state.pop("msg")
+        st.success(m)
     offerings = teacher_offerings(conn, tno)
     if not offerings:
         st.info("暂无排课")
@@ -158,14 +159,11 @@ def grade_input_page(conn, tno):
             cur.nextset()
             st.session_state.msg = ("success", f"{sno} → {score}")
             st.rerun()
-        except Exception as e:
+        except pymysql.Error as e:
             st.error(str(e))
 
 
 def batch_grade_page(conn, tno):
-    if st.session_state.get("msg"):
-        t, m = st.session_state.pop("msg")
-        st.toast(m, icon="✅")
     file = st.file_uploader("上传 CSV（plan_id, student_no, score）", type="csv")
     if not file:
         return
@@ -185,11 +183,10 @@ def batch_grade_page(conn, tno):
                 cur.fetchall()
                 cur.nextset()
                 ok += 1
-            except Exception as e:
+            except (pymysql.Error, ValueError, KeyError, csv.Error) as e:
                 fail += 1
-                st.warning(f"{row.get('student_no', '?')}: {e}")
-        st.session_state.msg = ("success", f"完成：成功 {ok} 条，失败 {fail} 条")
-        st.rerun()
+                st.error(f"第{ok + fail + 1}行 {row.get('student_no', '?')}: {e}")
+        st.success(f"✅ 完成：成功 {ok} 条，失败 {fail} 条")
 
 
 def my_students_page(conn, tno):
@@ -295,7 +292,7 @@ def teacher_list_page(conn):
     st.dataframe(df, use_container_width=True)
 
 
-def backup_page(conn):
+def backup_page(_conn):
     if st.button("备份数据库"):
         os.makedirs("backup", exist_ok=True)
         name = f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.sql'
@@ -323,7 +320,7 @@ def backup_page(conn):
             st.error(r.stderr[:200])
 
 
-def restore_page(conn):
+def restore_page(_conn):
     file = st.file_uploader("选择备份文件 (.sql)", type="sql")
 
     # 上传文件后立即保存到 session_state，防止 button 点击重跑时丢失
@@ -362,7 +359,7 @@ def restore_page(conn):
 def class_manage_page(conn):
     # 显示上次操作的消息（跨 st.rerun 存活）
     if st.session_state.get("msg"):
-        t, m = st.session_state.pop("msg")
+        _, m = st.session_state.pop("msg")
         st.toast(m, icon="✅")
 
     rows = class_list(conn)
@@ -434,7 +431,7 @@ def class_manage_page(conn):
 
 def course_manage_page(conn):
     if st.session_state.get("msg"):
-        t, m = st.session_state.pop("msg")
+        _, m = st.session_state.pop("msg")
         st.toast(m, icon="✅")
     rows = course_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "课程名", "学分", "状态"])
@@ -525,7 +522,7 @@ def course_manage_page(conn):
 
 def enrollment_manage_page(conn):
     if st.session_state.get("msg"):
-        t, m = st.session_state.pop("msg")
+        _, m = st.session_state.pop("msg")
         st.toast(m, icon="✅")
     rows = enrollment_list(conn)
     if not rows:
@@ -548,7 +545,7 @@ def enrollment_manage_page(conn):
 
 def teacher_manage_page(conn):
     if st.session_state.get("msg"):
-        t, m = st.session_state.pop("msg")
+        _, m = st.session_state.pop("msg")
         st.toast(m, icon="✅")
     rows = teacher_full_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "姓名", "工号", "职称", "电话", "状态"])
@@ -609,7 +606,7 @@ def teacher_manage_page(conn):
 
 def student_manage_page(conn):
     if st.session_state.get("msg"):
-        t, m = st.session_state.pop("msg")
+        _, m = st.session_state.pop("msg")
         st.toast(m, icon="✅")
     rows = student_full_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "姓名", "学号", "班级ID", "班级", "状态"])
@@ -673,7 +670,7 @@ def student_manage_page(conn):
 
 def offering_manage_page(conn):
     if st.session_state.get("msg"):
-        t, m = st.session_state.pop("msg")
+        _, m = st.session_state.pop("msg")
         st.toast(m, icon="✅")
     rows = offering_full_list(conn)
     df = pd.DataFrame(
@@ -782,7 +779,7 @@ def offering_manage_page(conn):
                     ]:
                         st.session_state.pop(k, None)
                     st.rerun()
-                except Exception as e:
+                except pymysql.Error as e:
                     st.error(f"新增失败：{e}")
 
     elif mode == "修改":
@@ -876,7 +873,7 @@ def offering_manage_page(conn):
                     conn.commit()
                     st.session_state.msg = ("success", "修改成功")
                     st.rerun()
-                except Exception as e:
+                except pymysql.Error as e:
                     st.error(f"修改失败：{e}")
 
     elif mode == "删除":
