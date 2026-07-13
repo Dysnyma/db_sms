@@ -419,7 +419,7 @@ def ch6():
 
     i=fh('6.1.1')
     if i:
-        ap(i,'以下为核心 DDL 建表语句示例（完整脚本存放于 SQL/ 目录）。')
+        ap(i,'以下为核心 DDL 建表语句示例（完整脚本存放于 sql/ 目录）。')
         acode(i+1,'-- 班级表\nCREATE TABLE class (\n    id          INT             NOT NULL AUTO_INCREMENT  COMMENT \'班级ID\',\n    name        VARCHAR(50)     NOT NULL                 COMMENT \'班级名\',\n    grade       VARCHAR(10)     NOT NULL                 COMMENT \'年级\',\n    major       VARCHAR(100)    NOT NULL                 COMMENT \'专业\',\n    status      TINYINT(1)      NOT NULL DEFAULT 1       COMMENT \'1=在读 0=毕业\',\n    create_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    update_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n    is_deleted  TINYINT(1)      NOT NULL DEFAULT 0       COMMENT \'逻辑删除\',\n    PRIMARY KEY (id),\n    INDEX idx_class_name (name),\n    INDEX idx_class_grade (grade),\n    INDEX idx_class_major (major)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;')
         acode(i+2,'-- 学生表\nCREATE TABLE student (\n    id              INT             NOT NULL AUTO_INCREMENT  COMMENT \'学生ID\',\n    name            VARCHAR(50)     NOT NULL                 COMMENT \'姓名\',\n    no              VARCHAR(20)     NOT NULL                 COMMENT \'学号\',\n    class_id        INT             NOT NULL                 COMMENT \'班级ID\',\n    weighted_score  DECIMAL(5,2)    NOT NULL DEFAULT 0.00    COMMENT \'学籍分\',\n    gpa             DECIMAL(5,2)    NOT NULL DEFAULT 0.00    COMMENT \'绩点分\',\n    status          TINYINT(1)      NOT NULL DEFAULT 1       COMMENT \'1=在读 0=离校\',\n    create_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    update_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n    is_deleted      TINYINT(1)      NOT NULL DEFAULT 0       COMMENT \'逻辑删除\',\n    PRIMARY KEY (id),\n    UNIQUE INDEX uk_student_no (no),\n    INDEX idx_student_name (name),\n    INDEX idx_student_class (class_id),\n    CONSTRAINT fk_student_class FOREIGN KEY (class_id) REFERENCES class(id)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;')
 
@@ -605,8 +605,8 @@ def refs_app():
     if i:
         an(i,[
             '本课程设计的完整代码和 SQL 脚本存放于项目目录中，主要文件结构如下：',
-            'SQL/ 目录：01_数据库创建.sql、02_基础数据表.sql、03_中间表.sql、04_视图.sql、06_触发器.sql、07_存储过程.sql、08_存储函数.sql，共 7 个脚本文件。',
-            'code/ 目录：app.py（Streamlit Web 主应用）、main.py（CLI 入口）、admin.py（教务管理）、student.py（学生端）、teacher.py（教师端）、tester.py（测试工具）、core/（配置/认证/工具模块）。',
+            'sql/ 目录：01_数据库创建.sql、02_基础数据表.sql、03_中间表.sql、04_视图.sql、06_触发器.sql、07_存储过程.sql、08_存储函数.sql，共 7 个脚本文件。',
+            'src/ 目录：app.py（Streamlit Web 主应用）、main.py（CLI 入口）、admin.py（教务管理）、student.py（学生端）、teacher.py（教师端）、tester.py（测试工具）、core/（配置/认证/工具模块）。',
             'data/ 目录：class.csv、student.csv、teacher.csv、course.csv、course_offering.csv、enrollment.csv、teacher_course.csv，共 7 个测试数据文件。',
             'docs/ 目录：开发日志.md、AI修正日志.md、日志.md 等开发过程记录文档。',
             '',

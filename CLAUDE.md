@@ -6,8 +6,8 @@
 - **选题**：题目二 —— 学生成绩管理系统
 - **数据库名**：`db_sms`（Student Management System）
 - **当前阶段**：逻辑结构设计（建表分析中）
-- **分析文档**：`docs/notes/建表分析.md`
-- **优化建议**：`docs/notes/建表分析优化建议.md`
+- **分析文档**：`document/notes/建表分析.md`
+- **优化建议**：`document/notes/建表分析优化建议.md`
 
 ## 设计规范
 
@@ -26,9 +26,9 @@
 ## 版本管理
 
 - 旧版本文件存入 `archive/` 文件夹
-- 开发日志：`docs/开发日志.md`
-- 问答日志：`docs/日志.md`
-- AI 修正日志：`docs/AI修正日志.md`
+- 开发日志：`document/dev-log/开发日志.md`
+- 问答日志：`document/dev-log/日志.md`
+- AI 修正日志：`document/dev-log/AI修正日志.md`
 
 ## 历史参考
 

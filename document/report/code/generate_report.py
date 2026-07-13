@@ -872,7 +872,7 @@ def fill_chapter6_implementation():
     idx_611 = find_para_index_by_text(doc, '6.1.1 DDL脚本')
     if idx_611 is not None:
         add_simple_text(doc, idx_611,
-            '以下是核心建表 DDL 语句示例（以班级表和学生表为例）。完整的 DDL 脚本存放于项目 SQL/ 目录下。')
+            '以下是核心建表 DDL 语句示例（以班级表和学生表为例）。完整的 DDL 脚本存放于项目 sql/ 目录下。')
         add_simple_text(doc, idx_611 + 1,
             '-- 班级表\n'
             'CREATE TABLE class (\n'
@@ -1253,10 +1253,10 @@ def fill_references_and_appendix():
         add_simple_text(doc, idx,
             '本课程设计的完整代码和 SQL 脚本存放于项目目录中，主要文件结构如下：')
         add_simple_text(doc, idx + 1,
-            'SQL/ 目录：01_数据库创建.sql、02_基础数据表.sql、03_中间表.sql、'
+            'sql/ 目录：01_数据库创建.sql、02_基础数据表.sql、03_中间表.sql、'
             '04_视图.sql、06_触发器.sql、07_存储过程.sql、08_存储函数.sql')
         add_simple_text(doc, idx + 2,
-            'code/ 目录：app.py（Streamlit 主应用）、main.py（CLI 入口）、'
+            'src/ 目录：app.py（Streamlit 主应用）、main.py（CLI 入口）、'
             'admin.py（教务功能）、student.py（学生功能）、teacher.py（教师功能）、'
             'tester.py（测试工具）、core/（配置、认证、工具模块）')
         add_simple_text(doc, idx + 3,

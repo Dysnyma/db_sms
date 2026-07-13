@@ -1,7 +1,7 @@
 """
 批量导入数据到 db_sms
 用法：python 数据/import_data.py
-前提：已执行 SQL/01~03 建库建表
+前提：已执行 sql/01~03 建库建表
 """
 import csv
 import os

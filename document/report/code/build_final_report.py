@@ -479,7 +479,7 @@ def ch6():
 
     i = find_h('6.1.1')
     if i:
-        add_p(i, '以下为核心建表 DDL 语句示例，以班级表和学生表为代表。完整的 DDL 脚本存放于项目 SQL/ 目录下。')
+        add_p(i, '以下为核心建表 DDL 语句示例，以班级表和学生表为代表。完整的 DDL 脚本存放于项目 sql/ 目录下。')
         add_code(i+1, '-- 班级表\nCREATE TABLE class (\n    id          INT             NOT NULL AUTO_INCREMENT  COMMENT \'班级ID\',\n    name        VARCHAR(50)     NOT NULL                 COMMENT \'班级名\',\n    grade       VARCHAR(10)     NOT NULL                 COMMENT \'年级\',\n    major       VARCHAR(100)    NOT NULL                 COMMENT \'专业\',\n    status      TINYINT(1)      NOT NULL DEFAULT 1       COMMENT \'1=在读 0=毕业\',\n    create_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    update_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n    is_deleted  TINYINT(1)      NOT NULL DEFAULT 0       COMMENT \'逻辑删除\',\n    PRIMARY KEY (id),\n    INDEX idx_class_name (name),\n    INDEX idx_class_grade (grade),\n    INDEX idx_class_major (major)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;')
         add_code(i+2, '-- 学生表\nCREATE TABLE student (\n    id              INT             NOT NULL AUTO_INCREMENT  COMMENT \'学生ID\',\n    name            VARCHAR(50)     NOT NULL                 COMMENT \'姓名\',\n    no              VARCHAR(20)     NOT NULL                 COMMENT \'学号\',\n    class_id        INT             NOT NULL                 COMMENT \'班级ID\',\n    weighted_score  DECIMAL(5,2)    NOT NULL DEFAULT 0.00    COMMENT \'学籍分\',\n    gpa             DECIMAL(5,2)    NOT NULL DEFAULT 0.00    COMMENT \'绩点分\',\n    status          TINYINT(1)      NOT NULL DEFAULT 1       COMMENT \'1=在读 0=离校\',\n    create_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    update_time     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n    is_deleted      TINYINT(1)      NOT NULL DEFAULT 0       COMMENT \'逻辑删除\',\n    PRIMARY KEY (id),\n    UNIQUE INDEX uk_student_no (no),\n    INDEX idx_student_name (name),\n    INDEX idx_student_class (class_id),\n    CONSTRAINT fk_student_class FOREIGN KEY (class_id) REFERENCES class(id)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;')
 
@@ -663,8 +663,8 @@ def refs_appendix():
     if i:
         add_n(i, [
             '本课程设计的完整代码和 SQL 脚本存放于项目目录中，主要文件结构如下：',
-            '• SQL/ 目录：01_数据库创建.sql、02_基础数据表.sql、03_中间表.sql、04_视图.sql、06_触发器.sql、07_存储过程.sql、08_存储函数.sql，共 7 个脚本文件，覆盖全部数据库对象的创建。',
-            '• code/ 目录：app.py（Streamlit Web 主应用，约 800 行）、main.py（CLI 入口程序）、admin.py（教务管理功能，约 1176 行）、student.py（学生端功能）、teacher.py（教师端功能）、tester.py（测试工具，可切换任意角色进行功能验证）、core/（配置模块、认证模块、工具函数模块）。',
+            '• sql/ 目录：01_数据库创建.sql、02_基础数据表.sql、03_中间表.sql、04_视图.sql、06_触发器.sql、07_存储过程.sql、08_存储函数.sql，共 7 个脚本文件，覆盖全部数据库对象的创建。',
+            '• src/ 目录：app.py（Streamlit Web 主应用，约 800 行）、main.py（CLI 入口程序）、admin.py（教务管理功能，约 1176 行）、student.py（学生端功能）、teacher.py（教师端功能）、tester.py（测试工具，可切换任意角色进行功能验证）、core/（配置模块、认证模块、工具函数模块）。',
             '• data/ 目录：class.csv、student.csv、teacher.csv、course.csv、course_offering.csv、enrollment.csv、teacher_course.csv，共 7 个 CSV 测试数据文件。',
             '• docs/ 目录：开发日志.md（完整开发时间线）、AI修正日志.md（AI 错误及人工修正记录）、日志.md（问答日志）、以及建表分析、Python 代码说明、事务讲解等设计文档。',
             '• backup/ 目录：多次数据库备份文件，以时间戳命名，可用于恢复到任意历史状态。',

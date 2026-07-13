@@ -34,10 +34,10 @@ pip install streamlit pymysql pandas
 
 ```bash
 # 一键建库 + 导入种子数据
-python code/reset_data.py
+python src/reset_data.py
 ```
 
-或手动按顺序执行 `SQL/` 目录下的 `.sql` 文件：
+或手动按顺序执行 `sql/` 目录下的 `.sql` 文件：
 
 ```
 01_数据库创建.sql → 02_基础数据表.sql → 03_中间表.sql → 04_视图.sql → 06_触发器.sql → 07_存储过程.sql → 08_存储函数.sql
@@ -46,17 +46,17 @@ python code/reset_data.py
 然后导入 CSV 数据：
 
 ```bash
-python code/import_data.py
+python src/import_data.py
 ```
 
 ### 3. 启动应用
 
 ```bash
 # Web 界面（推荐）
-streamlit run code/app.py
+streamlit run src/app.py
 
 # 命令行界面
-python code/main.py
+python src/main.py
 ```
 
 ### 4. 登录
@@ -88,23 +88,23 @@ python code/main.py
 ## 项目结构
 
 ```
-├── code/               # Python 源码
+├── src/                # Python 源码
 │   ├── app.py          # Streamlit Web 入口
 │   ├── main.py         # CLI 入口
 │   ├── reset_data.py   # 一键重建数据库
 │   ├── import_data.py  # CSV 数据导入
 │   └── core/           # 配置、认证、工具函数
-├── SQL/                # 数据库 DDL/DML
+├── sql/                # 数据库 DDL/DML
 ├── data/               # 种子 CSV 数据
 ├── backup/             # 数据库备份
-├── document/           # 课程设计文档、报告
+├── document/           # 课程设计文档、报告、图片
 ├── archive/            # 历史参考文件
-└── images/             # 图片资源
+└── test/               # 测试
 ```
 
 ## 配置
 
-数据库连接在 `code/core/config.py` 中修改：
+数据库连接在 `src/core/config.py` 中修改：
 
 ```python
 DB = {

@@ -536,7 +536,7 @@ def fill_ch6():
     idx = find_heading(doc, '6.1.1')
     if idx:
         add_content_after(doc, idx,
-            '以下为核心建表 DDL 语句示例（以班级表和学生表为代表，完整脚本存放于项目 SQL/ 目录）：')
+            '以下为核心建表 DDL 语句示例（以班级表和学生表为代表，完整脚本存放于项目 sql/ 目录）：')
         code_block_after(doc, idx+1,
             '-- 班级表\n'
             'CREATE TABLE class (\n'
@@ -761,8 +761,8 @@ def fill_refs():
     if idx:
         add_multiple_after(doc, idx, [
             '本课程设计的完整代码和 SQL 脚本存放于项目目录，主要结构如下：',
-            'SQL/ 目录：01_数据库创建.sql、02_基础数据表.sql、03_中间表.sql、04_视图.sql、06_触发器.sql、07_存储过程.sql、08_存储函数.sql',
-            'code/ 目录：app.py（Streamlit 主应用）、main.py（CLI 入口）、admin.py（教务功能，约 1176 行）、student.py（学生功能）、teacher.py（教师功能）、tester.py（测试工具）、core/（配置/认证/工具模块）',
+            'sql/ 目录：01_数据库创建.sql、02_基础数据表.sql、03_中间表.sql、04_视图.sql、06_触发器.sql、07_存储过程.sql、08_存储函数.sql',
+            'src/ 目录：app.py（Streamlit 主应用）、main.py（CLI 入口）、admin.py（教务功能，约 1176 行）、student.py（学生功能）、teacher.py（教师功能）、tester.py（测试工具）、core/（配置/认证/工具模块）',
             'data/ 目录：class.csv、student.csv、teacher.csv、course.csv、course_offering.csv、enrollment.csv、teacher_course.csv 等测试数据文件',
             'docs/ 目录：开发日志.md、AI修正日志.md、日志.md、建表分析.md 等设计文档',
         ])

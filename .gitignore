@@ -5,3 +5,4 @@ __pycache__/
 node_modules/
 document/上交/
 archive/PowerDesigner 16.5.zip
+venv/

@@ -514,7 +514,7 @@ def ch6():
 
     idx = find_heading(doc, '6.1.1')
     if idx:
-        add_para(doc, idx, '以下为核心建表 DDL 示例（完整脚本存放于 SQL/ 目录）：')
+        add_para(doc, idx, '以下为核心建表 DDL 示例（完整脚本存放于 sql/ 目录）：')
         add_code(doc, idx+1,
             '-- 班级表\nCREATE TABLE class (\n'
             '    id INT NOT NULL AUTO_INCREMENT COMMENT \'班级ID\',\n'
@@ -702,8 +702,8 @@ def refs():
     if idx:
         add_paras(doc, idx, [
             '本课程设计完整代码和 SQL 脚本存放于项目目录：',
-            'SQL/ 目录：01_数据库创建.sql ~ 08_存储函数.sql（7 个脚本文件）',
-            'code/ 目录：app.py（Streamlit 主应用，约 800 行）、main.py（CLI 入口）、admin.py（教务功能，约 1176 行）、student.py、teacher.py、tester.py、core/（配置/认证/工具）',
+            'sql/ 目录：01_数据库创建.sql ~ 08_存储函数.sql（7 个脚本文件）',
+            'src/ 目录：app.py（Streamlit 主应用，约 800 行）、main.py（CLI 入口）、admin.py（教务功能，约 1176 行）、student.py、teacher.py、tester.py、core/（配置/认证/工具）',
             'data/ 目录：class.csv、student.csv、teacher.csv、course.csv、course_offering.csv、enrollment.csv、teacher_course.csv',
             'docs/ 目录：开发日志.md、AI修正日志.md、建表分析.md 等设计文档',
         ])

@@ -392,7 +392,7 @@ function buildDocument() {
   children.push(heading2('6.1 数据库及基本表创建'));
   children.push(bodyPara('数据库实施按以下步骤完成：第一步，创建数据库 db_sms（utf8mb4 + utf8mb4_unicode_ci）；第二步，执行 DDL 脚本创建 8 张表；第三步，创建 3 个视图封装多表联查；第四步，创建 5 个触发器实现自动化维护；第五步，创建 9 个存储过程和 2 个存储函数；第六步，通过 CSV 批量导入测试数据（12 班级、120 学生、16 教师、12 课程、100 排课、835 选课记录）。'));
   children.push(heading3('6.1.1 DDL脚本'));
-  children.push(bodyPara('以下为核心建表 DDL 示例（完整脚本存放于 SQL/ 目录）：', { noIndent: true }));
+  children.push(bodyPara('以下为核心建表 DDL 示例（完整脚本存放于 sql/ 目录）：', { noIndent: true }));
 
   // DDL code blocks
   const ddl1 = 'CREATE TABLE class (\n    id INT NOT NULL AUTO_INCREMENT COMMENT \'班级ID\',\n    name VARCHAR(50) NOT NULL, grade VARCHAR(10) NOT NULL,\n    major VARCHAR(100) NOT NULL,\n    status TINYINT(1) NOT NULL DEFAULT 1,\n    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n    is_deleted TINYINT(1) NOT NULL DEFAULT 0,\n    PRIMARY KEY (id)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;';
@@ -523,8 +523,8 @@ function buildDocument() {
   children.push(new Paragraph({ children: [new PageBreak()] }));
   children.push(heading1('附录：AI完整对话/操作日志摘要'));
   children.push(bodyPara('本课程设计完整代码和 SQL 脚本存放于项目目录：'));
-  children.push(bodyPara('SQL/ 目录：01_数据库创建.sql ~ 08_存储函数.sql（7 个脚本文件）。', { noIndent: true }));
-  children.push(bodyPara('code/ 目录：app.py（Streamlit 主应用，约 800 行）、main.py（CLI 入口）、admin.py（教务功能，约 1176 行）、student.py、teacher.py、tester.py、core/（配置/认证/工具）。', { noIndent: true }));
+  children.push(bodyPara('sql/ 目录：01_数据库创建.sql ~ 08_存储函数.sql（7 个脚本文件）。', { noIndent: true }));
+  children.push(bodyPara('src/ 目录：app.py（Streamlit 主应用，约 800 行）、main.py（CLI 入口）、admin.py（教务功能，约 1176 行）、student.py、teacher.py、tester.py、core/（配置/认证/工具）。', { noIndent: true }));
   children.push(bodyPara('data/ 目录：class.csv、student.csv、teacher.csv、course.csv、course_offering.csv、enrollment.csv、teacher_course.csv。', { noIndent: true }));
   children.push(bodyPara('docs/ 目录：开发日志.md、AI修正日志.md、建表分析.md 等设计文档。', { noIndent: true }));
 
