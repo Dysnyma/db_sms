@@ -715,7 +715,7 @@ def offering_manage_page(conn):
         # 学期下拉：当前年份前后各3年
         this_year = datetime.now().year
         sem_options = [
-            f"{y}-{y+1}-{s}"
+            f"{y}-{y + 1}-{s}"
             for y in range(this_year - 3, this_year + 2)
             for s in (1, 2)
         ]
@@ -798,7 +798,7 @@ def offering_manage_page(conn):
             row = cur.fetchone()
             # 学期：当前值不在列表中则追加
             sem_opts = [
-                f"{y}-{y+1}-{s}"
+                f"{y}-{y + 1}-{s}"
                 for y in range(datetime.now().year - 3, datetime.now().year + 2)
                 for s in (1, 2)
             ]

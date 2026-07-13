@@ -24,7 +24,7 @@ def _pick_student(conn):
         [[i + 1, r[2], r[1], r[3]] for i, r in enumerate(show_rows)],
     )
     if len(rows) > 5:
-        print(f"  ...还有 {len(rows)-5} 人（共 {len(rows)} 人）")
+        print(f"  ...还有 {len(rows) - 5} 人（共 {len(rows)} 人）")
     try:
         n = int(input("  选第几个（0=取消）: "))
         if 1 <= n <= len(show_rows):
@@ -52,7 +52,7 @@ def _pick_teacher(conn):
         [[i + 1, r[2], r[1], r[3]] for i, r in enumerate(show_rows)],
     )
     if len(rows) > 5:
-        print(f"  ...还有 {len(rows)-5} 人（共 {len(rows)} 人）")
+        print(f"  ...还有 {len(rows) - 5} 人（共 {len(rows)} 人）")
     try:
         n = int(input("  选第几个（0=取消）: "))
         if 1 <= n <= len(show_rows):

@@ -200,7 +200,7 @@ def my_students(conn, tid, tname):
     print(f"  {tname} 老师的排课")
     hr()
     for i, (oid, cname, sem, cur_s, max_s) in enumerate(offerings):
-        print(f"  [{i+1}] ID={oid}  {sem}  {cname}  ({cur_s}/{max_s})")
+        print(f"  [{i + 1}] ID={oid}  {sem}  {cname}  ({cur_s}/{max_s})")
 
     oid = input("\n  请输入排课ID查看学生 (0=取消): ").strip()
     if oid == "0" or not oid:

@@ -51,7 +51,7 @@ def render_menu(conn, title, items, cols=2):
     print(f"  {title}")
     hr()
     for i, (label, _) in enumerate(items):
-        print(f"  {i+1:2}. {_pad(label, 16)}", end="")
+        print(f"  {i + 1:2}. {_pad(label, 16)}", end="")
         if (i + 1) % cols == 0:
             print()
     if len(items) % cols != 0:
@@ -90,7 +90,7 @@ class Paginator:
 
     @property
     def info(self):
-        return f"第 {self.page+1}/{self.total} 页，共 {len(self.rows)} 条"
+        return f"第 {self.page + 1}/{self.total} 页，共 {len(self.rows)} 条"
 
     def next(self):
         if self.page < self.total - 1:
