@@ -369,6 +369,24 @@ def teacher_list_page(conn):
     )
     st.dataframe(df, use_container_width=True)
 
+    if len(rows) > 1:
+        st.divider()
+        c1, c2 = st.columns(2)
+        with c1:
+            top_offer = df.nlargest(10, "排课数")
+            fig = px.bar(top_offer, x="排课数", y="姓名", orientation="h",
+                         title="排课数排行", text_auto=True, color="排课数",
+                         color_continuous_scale="blues")
+            fig.update_layout(yaxis_title="", showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+        with c2:
+            top_stu = df.nlargest(10, "选课学生")
+            fig = px.bar(top_stu, x="选课学生", y="姓名", orientation="h",
+                         title="选课学生数排行", text_auto=True, color="选课学生",
+                         color_continuous_scale="greens")
+            fig.update_layout(yaxis_title="", showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+
 
 def backup_page(_conn):
     # 函数开头先消费消息（rerun 后依然能读取并显示）
