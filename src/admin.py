@@ -548,7 +548,7 @@ def teacher_add(conn):
     name = input(" 姓名：").strip()
     if not name:
         return
-    no = input(" 工号：").strip()
+    no = input(" 工号（如 T20240001）：").strip()
     if not no:
         return
     title = input(" 职称（回车跳过）：").strip() or None
@@ -1254,6 +1254,8 @@ def offering_full_list(conn):
         JOIN course c ON co.course_id = c.id
         JOIN teacher t ON co.teacher_id = t.id
         WHERE co.is_deleted = 0
+          AND c.is_deleted = 0
+          AND t.is_deleted = 0
         ORDER BY co.semester DESC, c.name
     """)
     return cur.fetchall()

@@ -958,6 +958,11 @@ def offering_manage_page(conn):
         sel = st.selectbox("选择要修改的排课", list(olmap.keys()), key="o_edit")
         if sel:
             oid = olmap[sel]
+            # 显示当前课程和教师（只读）
+            for r in rows:
+                if r[0] == oid:
+                    st.info(f"📌 课程：{r[1]}　教师：{r[2]}　（如需更改请删除后重建）")
+                    break
             with conn.cursor() as cur:
                 cur.execute(
                     """SELECT semester, max_students, enroll_start_time,
