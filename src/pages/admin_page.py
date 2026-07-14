@@ -919,6 +919,8 @@ def offering_manage_page(conn):
         if st.button("新增排课", key="btn_oa"):
             if not teachers:
                 st.error("该课程暂无能上的教师，请重新选择课程")
+            elif max_s > 99999:
+                st.error("选课上限不能超过 99999")
             elif not _check_times(
                 start_date, start_hour, start_min,
                 end_date, end_hour, end_min,
@@ -1040,7 +1042,9 @@ def offering_manage_page(conn):
                     key=f"oe_dl_min_{oid}", label_visibility="collapsed",
                 )
                 if st.button("保存修改", key=f"save_offering_{oid}"):
-                    if _check_times(
+                    if new_max > 99999:
+                        st.error("选课上限不能超过 99999")
+                    elif _check_times(
                         new_sd, new_sh, new_sm,
                         new_ed, new_eh, new_em,
                         new_dd, new_dh, new_dm,
