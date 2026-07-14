@@ -606,8 +606,8 @@ def teacher_manage_page(conn):
             max_chars=20,
             key="ta_no",
         )
-        title_opts = ["", "教授", "副教授", "讲师", "助教", "高级工程师", "工程师", "实验师", "研究员", "副研究员"]
-        title = st.selectbox("职称", title_opts, index=0, key="ta_title")
+        _title_opts = ["", "教授", "副教授", "讲师", "助教", "高级工程师", "工程师", "实验师", "研究员", "副研究员"]
+        title = st.selectbox("职称", _title_opts, index=0, key="ta_title", format_func=lambda x: "（空）" if x == "" else x)
         phone = st.text_input(
             "电话（可空）",
             placeholder="例如：13800138000",
@@ -653,9 +653,10 @@ def teacher_manage_page(conn):
                 max_chars=20,
                 key=f"te_no_{tid}",
             )
-            title_opts = ["", "教授", "副教授", "讲师", "助教", "高级工程师", "工程师", "实验师", "研究员", "副研究员"]
-            default_idx = title_opts.index(title) if title in title_opts else 0
-            new_title = st.selectbox("职称", title_opts, index=default_idx, key=f"te_title_{tid}")
+            _title_opts = ["", "教授", "副教授", "讲师", "助教", "高级工程师", "工程师", "实验师", "研究员", "副研究员"]
+            _title_fmt = lambda x: "（空）" if x == "" else x
+            default_idx = _title_opts.index(title) if title in _title_opts else 0
+            new_title = st.selectbox("职称", _title_opts, index=default_idx, key=f"te_title_{tid}", format_func=_title_fmt)
             new_phone = st.text_input(
                 "电话", value=phone or "",
                 placeholder="例如：13800138000",
