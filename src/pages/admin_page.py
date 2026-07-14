@@ -300,6 +300,36 @@ def class_grade_roster_page(conn):
     df = pd.DataFrame(rows, columns=["姓名", "学号", "课程", "教师", "学期", "成绩"])
     st.dataframe(df, use_container_width=True)
 
+    # 学生个人均分柱状图
+    if rows:
+        st.divider()
+        stu_scores = {}
+        for r in rows:
+            if r[5] is not None:  # 有成绩
+                key = (r[0], r[1])  # (姓名, 学号)
+                stu_scores.setdefault(key, []).append(float(r[5]))
+        if stu_scores:
+            stu_avg = {k: sum(v) / len(v) for k, v in stu_scores.items()}
+            df_avg = pd.DataFrame(
+                [(k[0], k[1], v) for k, v in stu_avg.items()],
+                columns=["姓名", "学号", "均分"],
+            ).sort_values("均分", ascending=False).reset_index(drop=True)
+            df_avg["序号"] = range(1, len(df_avg) + 1)
+            fig = px.bar(df_avg, x="序号", y="均分", title="学生个人均分排名",
+                         hover_data={"姓名": True, "学号": True, "均分": ":.1f"},
+                         text="均分", text_auto=".1f",
+                         color="均分", color_continuous_scale=["#f44336", "#FFC107", "#8BC34A", "#4CAF50"],
+                         range_color=[0, 100])
+            fig.update_traces(textposition="outside")
+            fig.update_layout(xaxis_title="", showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+
+            # 均分汇总
+            c1, c2, c3 = st.columns(3)
+            c1.metric("班级人均均分", f"{df_avg['均分'].mean():.1f}")
+            c2.metric("最高个人均分", f"{df_avg['均分'].max():.1f}")
+            c3.metric("最低个人均分", f"{df_avg['均分'].min():.1f}")
+
 
 def teacher_info_page(conn):
     """教师信息查询页面"""
