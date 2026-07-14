@@ -130,28 +130,30 @@ def my_students_page(conn, tno):
                 buckets["及格 60~69"] += 1
             else:
                 buckets["不及格 <60"] += 1
-        df_pie = pd.DataFrame(list(buckets.items()), columns=["等级", "人数"])
-        fig = px.pie(df_pie, values="人数", names="等级", title="成绩分布",
-                     color="等级",
-                     color_discrete_map={
-                         "优秀 ≥90": "#4CAF50", "良好 80~89": "#8BC34A",
-                         "中等 70~79": "#FFC107", "及格 60~69": "#FF9800",
-                         "不及格 <60": "#f44336",
-                     })
-        fig.update_traces(textinfo="label+percent")
-        st.plotly_chart(fig, use_container_width=True)
-
-        df_rank = pd.DataFrame(graded, columns=["学号", "姓名", "成绩"])
-        df_rank = df_rank.sort_values("成绩", ascending=False).reset_index(drop=True)
-        df_rank["序号"] = range(1, len(df_rank) + 1)
-        fig = px.bar(df_rank, x="序号", y="成绩", title="成绩排行",
-                     hover_data={"姓名": True, "学号": True, "成绩": ":.1f"},
-                     text="成绩", text_auto=".1f",
-                     color="成绩", color_continuous_scale=["#f44336", "#FFC107", "#8BC34A", "#4CAF50"],
-                     range_color=[0, 100])
-        fig.update_traces(textposition="outside")
-        fig.update_layout(xaxis_title="名次", showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        col_l, col_r = st.columns(2)
+        with col_l:
+            df_pie = pd.DataFrame(list(buckets.items()), columns=["等级", "人数"])
+            fig = px.pie(df_pie, values="人数", names="等级", title="成绩分布",
+                         color="等级",
+                         color_discrete_map={
+                             "优秀 ≥90": "#4CAF50", "良好 80~89": "#8BC34A",
+                             "中等 70~79": "#FFC107", "及格 60~69": "#FF9800",
+                             "不及格 <60": "#f44336",
+                         })
+            fig.update_traces(textinfo="label+percent")
+            st.plotly_chart(fig, use_container_width=True)
+        with col_r:
+            df_rank = pd.DataFrame(graded, columns=["学号", "姓名", "成绩"])
+            df_rank = df_rank.sort_values("成绩", ascending=False).reset_index(drop=True)
+            df_rank["序号"] = range(1, len(df_rank) + 1)
+            fig = px.bar(df_rank, x="序号", y="成绩", title="成绩排行",
+                         hover_data={"姓名": True, "学号": True, "成绩": ":.1f"},
+                         text="成绩", text_auto=".1f",
+                         color="成绩", color_continuous_scale=["#f44336", "#FFC107", "#8BC34A", "#4CAF50"],
+                         range_color=[0, 100])
+            fig.update_traces(textposition="outside")
+            fig.update_layout(xaxis_title="名次", showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
 
         scores_list = [sc for _, _, sc in graded]
         c1, c2, c3, c4 = st.columns(4)
