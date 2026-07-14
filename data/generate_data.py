@@ -263,9 +263,13 @@ def main():
                 used_enrollment.add(key)
                 offering_used[oi] += 1
                 cn, tn, sem_s, *_ = offering_list[oi]
-                score = round(random.gauss(75, 15), 1)
-                score = max(0, min(100, score))
-                enrollment_list.append((sno, cn, tn, sem_s, score))
+                # 约 25% 的选课未录入成绩
+                if random.random() < 0.25:
+                    enrollment_list.append((sno, cn, tn, sem_s, ""))
+                else:
+                    score = round(random.gauss(75, 15), 1)
+                    score = max(0, min(100, score))
+                    enrollment_list.append((sno, cn, tn, sem_s, score))
                 taken += 1
 
     with open(os.path.join(DATA_DIR, "enrollment.csv"), "w", encoding="utf-8", newline="") as f:
