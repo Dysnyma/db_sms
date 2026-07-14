@@ -12,6 +12,11 @@ _CSV_PATH = os.path.join(
 
 def all_majors() -> list[str]:
     """返回全部专业名称列表"""
+    if not os.path.exists(_CSV_PATH):
+        os.makedirs(os.path.dirname(_CSV_PATH), exist_ok=True)
+        with open(_CSV_PATH, "w", encoding="utf-8", newline="") as f:
+            csv.writer(f).writerow(["name"])
+        return []
     majors = []
     with open(_CSV_PATH, "r", encoding="utf-8") as f:
         for row in csv.DictReader(f):
