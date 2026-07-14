@@ -61,6 +61,9 @@ def _make_page(fn, *args):
         conn = get_connection()
         try:
             fn(conn, *args)
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 
