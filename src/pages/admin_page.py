@@ -23,7 +23,6 @@ from admin import (
 )
 from core.models import (
     ClassCreate,
-    ClassUpdate,
     CourseCreate,
     CourseUpdate,
     TeacherCreate,
@@ -335,29 +334,35 @@ def class_manage_page(conn):
     mode = st.radio("操作", ["新增", "修改", "删除"], horizontal=True)
 
     if mode == "新增":
-        name = st.text_input(
-            "班级名",
-            placeholder="例如：软件工程 1 班",
-            help="班级名长度为 1-50 个字符",
-            max_chars=50,
-            key="ca_name",
-        )
-        grade = st.text_input(
-            "年级",
-            placeholder="例如：2024",
-            help="年级为 4 位年份",
-            max_chars=4,
-            key="ca_grade",
-        )
-        major = st.text_input(
-            "专业",
-            placeholder="例如：软件工程",
-            help="专业长度为 1-100 个字符",
-            max_chars=100,
-            key="ca_major",
-        )
+        this_year = datetime.now().year
+        grade_opts = [str(y) for y in range(this_year - 5, this_year + 5)]
+        grade = st.selectbox("年级", grade_opts, index=5, key="ca_grade")
+        majors = all_majors()
+        major = st.selectbox("专业", majors, key="ca_major")
+
+        # 自动生成班级名预览
+        generated_name = None
+        if grade and major:
+            import re
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT name FROM class WHERE grade=%s AND major=%s AND is_deleted=0",
+                [grade, major],
+            )
+            seq = 0
+            for (name,) in cur.fetchall():
+                m = re.search(r"(\d+)班$", name)
+                if m:
+                    n = int(m.group(1))
+                    if n > seq:
+                        seq = n
+            generated_name = f"{grade}{major}{seq + 1}班"
+            st.info(f"📌 将新增：**{generated_name}**")
+
         if st.button("新增班级", key="btn_ca"):
-            data = validate_or_error(ClassCreate, name=name, grade=grade, major=major)
+            if not generated_name:
+                return
+            data = validate_or_error(ClassCreate, name=generated_name, grade=grade, major=major)
             if data is None:
                 return
             try:
@@ -371,7 +376,7 @@ def class_manage_page(conn):
             except pymysql.Error as e:
                 conn.rollback()
                 st.error(f"新增失败：{e}")
-            for k in ["ca_name", "ca_grade", "ca_major"]:
+            for k in ["ca_grade", "ca_major"]:
                 st.session_state.pop(k, None)
             st.rerun()
 
@@ -380,27 +385,9 @@ def class_manage_page(conn):
         if sel:
             class_id = label_map[sel]
             name, grade, major, status = id_map[class_id]
-            new_name = st.text_input(
-                "班级名", value=name,
-                placeholder="例如：软件工程 1 班",
-                help="班级名长度为 1-50 个字符",
-                max_chars=50,
-                key=f"ce_name_{class_id}",
-            )
-            new_grade = st.text_input(
-                "年级", value=grade,
-                placeholder="例如：2024",
-                help="年级为 4 位年份",
-                max_chars=4,
-                key=f"ce_grade_{class_id}",
-            )
-            new_major = st.text_input(
-                "专业", value=major,
-                placeholder="例如：软件工程",
-                help="专业长度为 1-100 个字符",
-                max_chars=100,
-                key=f"ce_major_{class_id}",
-            )
+            st.text(f"📌 班级名：{name}")
+            st.text(f"📌 年级：{grade}级")
+            st.text(f"📌 专业：{major}")
             new_status = st.selectbox(
                 "状态",
                 ["在读", "毕业"],
@@ -408,20 +395,11 @@ def class_manage_page(conn):
                 key=f"ce_status_{class_id}",
             )
             if st.button("保存修改", key=f"save_class_{class_id}"):
-                data = validate_or_error(ClassUpdate, name=new_name, grade=new_grade, major=new_major)
-                if data is None:
-                    return
                 try:
                     with conn.cursor() as cur:
                         cur.execute(
-                            "UPDATE class SET name=%s,grade=%s,major=%s,status=%s WHERE id=%s",
-                            [
-                                data["name"],
-                                data["grade"],
-                                data["major"],
-                                1 if new_status == "在读" else 0,
-                                class_id,
-                            ],
+                            "UPDATE class SET status=%s WHERE id=%s",
+                            [1 if new_status == "在读" else 0, class_id],
                         )
                     conn.commit()
                     st.session_state.msg = ("success", "修改成功")
