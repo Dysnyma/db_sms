@@ -1096,7 +1096,8 @@ def major_manage_page(_conn):
     new_name = col1.text_input(
         "新增专业",
         placeholder="例如：物联网工程",
-        help="专业名不能为空且不能重复",
+        help="专业名 1-50 个字符，不能包含逗号且不能重复",
+        max_chars=50,
         key="ma_new",
     )
     if col2.button("添加", key="btn_ma"):

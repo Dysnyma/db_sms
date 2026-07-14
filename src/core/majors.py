@@ -20,10 +20,14 @@ def all_majors() -> list[str]:
 
 
 def add_major(name: str) -> str | None:
-    """新增专业，重复时返回错误信息"""
+    """新增专业，重复或格式错误时返回错误信息"""
     name = name.strip()
     if not name:
         return "专业名不能为空"
+    if "," in name or "，" in name:
+        return "专业名不能包含逗号"
+    if len(name) > 50:
+        return "专业名不能超过 50 个字符"
     if name in all_majors():
         return f"专业「{name}」已存在"
     with open(_CSV_PATH, "a", encoding="utf-8", newline="") as f:
