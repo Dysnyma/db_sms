@@ -988,7 +988,8 @@ def student_manage_page(conn):
         if sel:
             stid = slmap[sel]
             name, no, cur_cid = simap[stid]
-            cur_clabel = [k for k, v in clmap.items() if v == cur_cid][0]
+            matches = [k for k, v in clmap.items() if v == cur_cid]
+            cur_clabel = matches[0] if matches else None
             new_name = st.text_input(
                 "姓名", value=name,
                 placeholder="例如：张三",
@@ -1004,7 +1005,7 @@ def student_manage_page(conn):
                 key=f"se_no_{stid}",
             )
             new_cid = st.selectbox(
-                "班级", clabels, index=clabels.index(cur_clabel), key=f"se_class_{stid}"
+                "班级", clabels, key=f"se_class_{stid}"
             )
             if st.button("保存修改", key=f"save_student_{stid}"):
                 data = validate_or_error(StudentUpdate, name=new_name, no=new_no, class_id=clmap[new_cid])

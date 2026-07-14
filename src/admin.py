@@ -866,7 +866,7 @@ def offering_add(conn):
         SELECT t.id, t.name, IFNULL(t.title,'-')
         FROM teacher t
         JOIN teacher_course tc ON t.id = tc.teacher_id
-        WHERE tc.course_id = %s AND t.is_deleted = 0
+        WHERE tc.course_id = %s AND t.is_deleted = 0 AND t.status = 1
     """,
         [int(cid)],
     )
@@ -1269,7 +1269,7 @@ def teacher_course_teachers(conn, course_id):
         SELECT t.id, t.name, IFNULL(t.title,'')
         FROM teacher t
         JOIN teacher_course tc ON t.id = tc.teacher_id
-        WHERE tc.course_id = %s AND t.is_deleted = 0
+        WHERE tc.course_id = %s AND t.is_deleted = 0 AND t.status = 1
     """,
         [course_id],
     )
