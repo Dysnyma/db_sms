@@ -36,6 +36,24 @@ from core.models import (
 from core.majors import all_majors, add_major, delete_major
 
 
+# ── 缓存辅助（60 秒内不重复查询） ──
+@st.cache_data(ttl=60)
+def _cached_class_list():
+    conn = get_connection()
+    try:
+        return class_list(conn)
+    finally:
+        conn.close()
+
+@st.cache_data(ttl=60)
+def _cached_course_list():
+    conn = get_connection()
+    try:
+        return course_list(conn)
+    finally:
+        conn.close()
+
+
 def _sem_options():
     """生成学期选项列表（当前年份前后各 3 年）"""
     this_year = datetime.now().year
@@ -139,7 +157,7 @@ def summary_page(conn):
 
 def roster_page(conn):
     """班级学生名单页面"""
-    classes = class_list(conn)
+    classes = _cached_class_list()
     choices = {r[1]: r[0] for r in classes}
     cid = choices[st.selectbox("选择班级", list(choices.keys()))]
 
@@ -217,8 +235,8 @@ def roster_page(conn):
 def class_report_page(conn):
     """班级成绩统计页面"""
     col1, col2 = st.columns(2)
-    classes = class_list(conn)
-    courses = course_list(conn)
+    classes = _cached_class_list()
+    courses = _cached_course_list()
     cmap = {r[1]: r[0] for r in classes}
     gmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in courses}
     cid = col1.selectbox("选择班级", list(cmap.keys()))
@@ -277,7 +295,7 @@ def class_report_page(conn):
 
 def class_grade_roster_page(conn):
     """班级成绩明细页面"""
-    classes = class_list(conn)
+    classes = _cached_class_list()
     cmap = {r[1]: r[0] for r in classes}
     cid = st.selectbox("选择班级", list(cmap.keys()))
     class_id = cmap[cid]
@@ -527,7 +545,7 @@ def class_manage_page(conn):
         _, m = st.session_state.pop("msg")
         st.success(m)
 
-    rows = class_list(conn)
+    rows = _cached_class_list()
     df = pd.DataFrame(rows, columns=["ID", "班级名", "年级", "专业", "状态"])
     st.dataframe(df, use_container_width=True)
 
@@ -632,7 +650,7 @@ def course_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = course_list(conn)
+    rows = _cached_course_list()
     df = pd.DataFrame(rows, columns=["ID", "课程名", "学分", "状态"])
     st.dataframe(df, use_container_width=True)
     lmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in rows}
@@ -908,7 +926,7 @@ def student_manage_page(conn):
     rows = student_full_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "姓名", "学号", "班级ID", "班级", "状态"])
     st.dataframe(df, use_container_width=True)
-    classes = class_list(conn)
+    classes = _cached_class_list()
     clmap = {f"{r[1]} ({r[2]}级 {r[3]})": r[0] for r in classes}  # 班级标签→ID
     slmap = {f"{r[1]} ({r[2]})": r[0] for r in rows}  # 学生标签→ID
     simap = {r[0]: (r[1], r[2], r[3]) for r in rows}  # 学生ID→(name,no,class_id)
@@ -1051,7 +1069,7 @@ def offering_manage_page(conn):
         df[["ID", "课程", "教师", "学期", "已选", "上限", "状态"]],
         use_container_width=True,
     )
-    courses = course_list(conn)
+    courses = _cached_course_list()
     clmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in courses}
     olmap = {f"#{r[0]} {r[1]}-{r[2]} ({r[3]})": r[0] for r in rows}
 
