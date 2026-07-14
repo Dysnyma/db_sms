@@ -135,7 +135,7 @@ def my_students_page(conn, tno):
                 buckets["不及格 <60"] += 1
         col_l, col_r = st.columns(2)
         with col_l:
-            df_pie = pd.DataFrame(list(buckets.items()), columns=["等级", "人数"])
+            df_pie = pd.DataFrame([(k, v) for k, v in buckets.items() if v > 0], columns=["等级", "人数"])
             fig = px.pie(df_pie, values="人数", names="等级", title="成绩分布",
                          color="等级",
                          color_discrete_map={
