@@ -26,7 +26,7 @@ def log(msg):
 def import_csv(cursor, filepath, sql, *col_keys):
     """从 CSV 读取指定列，批量执行 INSERT"""
     rows = []
-    with open(filepath, "r", encoding="utf-8") as f:
+    with open(filepath, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             rows.append([row[k] for k in col_keys])
@@ -130,7 +130,7 @@ def main():
 
         # ---- 7. 选课 + 成绩（逐条导入，避免触发器冲突） ----
         n = 0
-        with open(f"{DATA_DIR}/enrollment.csv", "r", encoding="utf-8") as f:
+        with open(f"{DATA_DIR}/enrollment.csv", "r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 score_val = row["score"].strip() if row["score"].strip() else None
