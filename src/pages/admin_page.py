@@ -138,6 +138,7 @@ def teacher_info_page(conn):
         "教师工号",
         placeholder="例如：T20240001",
         help="工号格式：T 开头 + 数字，如 T20240001",
+        max_chars=20,
     )
     if not tno:
         return
@@ -338,18 +339,21 @@ def class_manage_page(conn):
             "班级名",
             placeholder="例如：软件工程 1 班",
             help="班级名长度为 1-50 个字符",
+            max_chars=50,
             key="ca_name",
         )
         grade = st.text_input(
             "年级",
             placeholder="例如：2024",
             help="年级为 4 位年份",
+            max_chars=4,
             key="ca_grade",
         )
         major = st.text_input(
             "专业",
             placeholder="例如：软件工程",
             help="专业长度为 1-100 个字符",
+            max_chars=100,
             key="ca_major",
         )
         if st.button("新增班级", key="btn_ca"):
@@ -380,18 +384,21 @@ def class_manage_page(conn):
                 "班级名", value=name,
                 placeholder="例如：软件工程 1 班",
                 help="班级名长度为 1-50 个字符",
+                max_chars=50,
                 key=f"ce_name_{class_id}",
             )
             new_grade = st.text_input(
                 "年级", value=grade,
                 placeholder="例如：2024",
                 help="年级为 4 位年份",
+                max_chars=4,
                 key=f"ce_grade_{class_id}",
             )
             new_major = st.text_input(
                 "专业", value=major,
                 placeholder="例如：软件工程",
                 help="专业长度为 1-100 个字符",
+                max_chars=100,
                 key=f"ce_major_{class_id}",
             )
             new_status = st.selectbox(
@@ -457,6 +464,7 @@ def course_manage_page(conn):
             "课程名",
             placeholder="例如：数据库原理",
             help="课程名长度为 1-100 个字符",
+            max_chars=100,
             key="coa_name",
         )
         credit = st.number_input(
@@ -508,6 +516,7 @@ def course_manage_page(conn):
                 "课程名", value=name,
                 placeholder="例如：数据库原理",
                 help="课程名长度为 1-100 个字符",
+                max_chars=100,
                 key=f"coe_name_{cid}",
             )
             new_credit = st.number_input(
@@ -611,24 +620,28 @@ def teacher_manage_page(conn):
             "姓名",
             placeholder="例如：张三",
             help="姓名长度为 1-50 个字符",
+            max_chars=50,
             key="ta_name",
         )
         no = st.text_input(
             "工号",
             placeholder="例如：T20240001",
             help="工号格式：T 开头 + 数字，如 T20240001",
+            max_chars=20,
             key="ta_no",
         )
         title = st.text_input(
             "职称（可空）",
             placeholder="例如：教授",
             help="职称最多 20 个字符",
+            max_chars=20,
             key="ta_title",
         )
         phone = st.text_input(
             "电话（可空）",
             placeholder="例如：13800138000",
             help="电话为 7-15 位纯数字",
+            max_chars=15,
             key="ta_phone",
         )
         if st.button("新增教师", key="btn_ta"):
@@ -659,24 +672,28 @@ def teacher_manage_page(conn):
                 "姓名", value=name,
                 placeholder="例如：张三",
                 help="姓名长度为 1-50 个字符",
+                max_chars=50,
                 key=f"te_name_{tid}",
             )
             new_no = st.text_input(
                 "工号", value=no,
                 placeholder="例如：T20240001",
                 help="工号格式：T 开头 + 数字，如 T20240001",
+                max_chars=20,
                 key=f"te_no_{tid}",
             )
             new_title = st.text_input(
                 "职称", value=title or "",
                 placeholder="例如：教授",
                 help="职称最多 20 个字符",
+                max_chars=20,
                 key=f"te_title_{tid}",
             )
             new_phone = st.text_input(
                 "电话", value=phone or "",
                 placeholder="例如：13800138000",
                 help="电话为 7-15 位纯数字",
+                max_chars=15,
                 key=f"te_phone_{tid}",
             )
             if st.button("保存修改", key=f"save_teacher_{tid}"):
@@ -733,9 +750,14 @@ def student_manage_page(conn):
             "姓名",
             placeholder="例如：张三",
             help="姓名长度为 1-50 个字符",
+            max_chars=50,
             key="sa_name",
         )
-        no = st.text_input("学号", key="sa_no", placeholder="例如：20240001", help="学号为 8-12 位纯数字，不可包含字母或符号")
+        no = st.text_input(
+            "学号", key="sa_no", placeholder="例如：20240001",
+            help="学号为 8-12 位纯数字，不可包含字母或符号",
+            max_chars=12,
+        )
         cid = st.selectbox("班级", clabels, key="sa_class")
         if st.button("新增学生", key="btn_sa"):
             data = validate_or_error(StudentCreate, name=name, no=no, class_id=clmap[cid])
@@ -787,12 +809,14 @@ def student_manage_page(conn):
                 "姓名", value=name,
                 placeholder="例如：张三",
                 help="姓名长度为 1-50 个字符",
+                max_chars=50,
                 key=f"se_name_{stid}",
             )
             new_no = st.text_input(
                 "学号", value=no,
                 placeholder="例如：20240001",
                 help="学号为 8-12 位纯数字，不可包含字母或符号",
+                max_chars=12,
                 key=f"se_no_{stid}",
             )
             new_cid = st.selectbox(

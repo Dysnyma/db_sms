@@ -40,11 +40,13 @@ def grade_input_page(conn, tno):
         "学生学号",
         placeholder="例如：20240001",
         help="学号为 8-12 位纯数字",
+        max_chars=12,
     )
     score = col2.text_input(
         "成绩",
         placeholder="例如：88.5",
         help="成绩为 0~100 的数值",
+        max_chars=6,
     )
     if col3.button("录入", key="grade_btn"):
         data = validate_or_error(GradeRecord, sno=sno, score=score)

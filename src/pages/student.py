@@ -56,6 +56,7 @@ def semester_avg_page(conn, sno):
         "学期",
         placeholder="例如：2024-2025-1",
         help="格式如：2024-2025-1（开始学年-结束学年-学期）",
+        max_chars=11,
     )
     if not sem:
         st.info("请输入学期")

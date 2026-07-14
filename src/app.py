@@ -74,7 +74,9 @@ def _validate_login_input(user_input: str) -> str | None:
 def _login_page():
     """登录页面：验证学号/工号，识别角色并写入 session_state"""
     st.title("学生成绩管理系统")
-    user_input = st.text_input("请输入学号/工号（教务输入 admin）")
+    user_input = st.text_input(
+        "请输入学号/工号（教务输入 admin）", max_chars=20,
+    )
     if st.button("登录"):
         # 格式校验
         err = _validate_login_input(user_input)
