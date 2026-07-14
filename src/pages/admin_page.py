@@ -876,7 +876,7 @@ def offering_manage_page(conn):
             tid = st.selectbox("教师", list(tlmap.keys()), key="oa_teacher")
         # 学期下拉：当前年份前后各3年
         sem = st.selectbox("学期", _sem_options(), key="oa_sem")
-        max_s = st.number_input("上限", min_value=1, value=30, key="oa_max")
+        max_s = st.text_input("上限", value="30", key="oa_max", max_chars=5, placeholder="上限 1~99999")
         st.caption("选课开始")
         c1, c2, c3 = st.columns([3, 1, 1])
         start_date = c1.date_input(
@@ -919,45 +919,51 @@ def offering_manage_page(conn):
         if st.button("新增排课", key="btn_oa"):
             if not teachers:
                 st.error("该课程暂无能上的教师，请重新选择课程")
-            elif max_s > 99999:
-                st.error("选课上限不能超过 99999")
-            elif not _check_times(
-                start_date, start_hour, start_min,
-                end_date, end_hour, end_min,
-                dl_date, dl_hour, dl_min,
-            ):
-                pass
             else:
                 try:
-                    with conn.cursor() as cur:
-                        cur.execute(
-                            """INSERT INTO course_offering
-                            (course_id,teacher_id,semester,max_students,
-                             enroll_start_time,enroll_end_time,grade_deadline)
-                            VALUES (%s,%s,%s,%s,%s,%s,%s)""",
-                            [
-                                course_id,
-                                tlmap[tid],
-                                sem,
-                                max_s,
-                                f"{start_date} {start_hour:02d}:{start_min:02d}:00",
-                                f"{end_date} {end_hour:02d}:{end_min:02d}:00",
-                                f"{dl_date} {dl_hour:02d}:{dl_min:02d}:00",
-                            ],
-                        )
-                    conn.commit()
-                    st.session_state.msg = ("success", "新增成功")
-                    for k in [
-                        "oa_course", "oa_teacher", "oa_sem", "oa_max",
-                        "oa_start_date", "oa_start_hour", "oa_start_min",
-                        "oa_end_date", "oa_end_hour", "oa_end_min",
-                        "oa_deadline_date", "oa_dl_hour", "oa_dl_min",
-                    ]:
-                        st.session_state.pop(k, None)
-                    st.rerun()
-                except pymysql.Error as e:
-                    conn.rollback()
-                    st.error(f"新增失败：{e}")
+                    max_s_val = int(max_s)
+                except (ValueError, TypeError):
+                    st.error("选课上限必须为整数")
+                    return
+                if max_s_val > 99999:
+                    st.error("选课上限不能超过 99999")
+                elif not _check_times(
+                    start_date, start_hour, start_min,
+                    end_date, end_hour, end_min,
+                    dl_date, dl_hour, dl_min,
+                ):
+                    pass
+                else:
+                    try:
+                        with conn.cursor() as cur:
+                            cur.execute(
+                                """INSERT INTO course_offering
+                                (course_id,teacher_id,semester,max_students,
+                                 enroll_start_time,enroll_end_time,grade_deadline)
+                                VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                                [
+                                    course_id,
+                                    tlmap[tid],
+                                    sem,
+                                    max_s_val,
+                                    f"{start_date} {start_hour:02d}:{start_min:02d}:00",
+                                    f"{end_date} {end_hour:02d}:{end_min:02d}:00",
+                                    f"{dl_date} {dl_hour:02d}:{dl_min:02d}:00",
+                                ],
+                            )
+                        conn.commit()
+                        st.session_state.msg = ("success", "新增成功")
+                        for k in [
+                            "oa_course", "oa_teacher", "oa_sem", "oa_max",
+                            "oa_start_date", "oa_start_hour", "oa_start_min",
+                            "oa_end_date", "oa_end_hour", "oa_end_min",
+                            "oa_deadline_date", "oa_dl_hour", "oa_dl_min",
+                        ]:
+                            st.session_state.pop(k, None)
+                        st.rerun()
+                    except pymysql.Error as e:
+                        conn.rollback()
+                        st.error(f"新增失败：{e}")
 
     elif mode == "修改":
         sel = st.selectbox("选择要修改的排课", list(olmap.keys()), key="o_edit")
@@ -983,9 +989,7 @@ def offering_manage_page(conn):
                 new_sem = st.selectbox(
                     "学期", sem_opts, index=sem_opts.index(cur_sem), key=f"oe_sem_{oid}"
                 )
-                new_max = st.number_input(
-                    "上限", min_value=1, value=int(row[1]), key=f"oe_max_{oid}"
-                )
+                new_max = st.text_input("上限", value=str(row[1]), key=f"oe_max_{oid}", max_chars=5, placeholder="上限 1~99999")
                 # 日期+时间 拆分
                 s_d, s_t = str(row[2])[:10], str(row[2])[11:16]
                 e_d, e_t = str(row[3])[:10], str(row[3])[11:16]
@@ -1042,7 +1046,12 @@ def offering_manage_page(conn):
                     key=f"oe_dl_min_{oid}", label_visibility="collapsed",
                 )
                 if st.button("保存修改", key=f"save_offering_{oid}"):
-                    if new_max > 99999:
+                    try:
+                        new_max_val = int(new_max)
+                    except (ValueError, TypeError):
+                        st.error("选课上限必须为整数")
+                        return
+                    if new_max_val > 99999:
                         st.error("选课上限不能超过 99999")
                     elif _check_times(
                         new_sd, new_sh, new_sm,
@@ -1057,7 +1066,7 @@ def offering_manage_page(conn):
                                     enroll_end_time=%s,grade_deadline=%s WHERE id=%s""",
                                     [
                                         new_sem,
-                                        new_max,
+                                        new_max_val,
                                         f"{new_sd} {new_sh:02d}:{new_sm:02d}:00",
                                         f"{new_ed} {new_eh:02d}:{new_em:02d}:00",
                                         f"{new_dd} {new_dh:02d}:{new_dm:02d}:00",
