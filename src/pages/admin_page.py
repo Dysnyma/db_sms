@@ -7,6 +7,8 @@ import pandas as pd
 import plotly.express as px
 import pymysql
 import streamlit as st
+from streamlit_extras.metric_cards import style_metric_cards
+from streamlit_extras.colored_header import colored_header
 from admin import (
     summary,
     class_list,
@@ -57,9 +59,11 @@ def _check_times(start_dt, end_dt, deadline_dt):
 
 def summary_page(conn):
     """数据概览页面"""
+    style_metric_cards(border_left_color="#4CAF50")
     cur = conn.cursor()
 
     # ── 总量指标 ──
+    colored_header("📊 数据概览", description="系统整体运行情况", color_name="green-70")
     data = summary(conn, False)
     cols = st.columns(6)
     for i, (label, val) in enumerate(data.items()):
