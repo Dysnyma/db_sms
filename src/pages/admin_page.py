@@ -298,7 +298,7 @@ def class_grade_roster_page(conn):
         st.info("该班级暂无成绩")
         return
     df = pd.DataFrame(rows, columns=["姓名", "学号", "课程", "教师", "学期", "成绩"])
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df.fillna("未录入"), use_container_width=True)
 
     # 按课程统计：该班学生各课程的平均分/人数/及格率
     if rows:

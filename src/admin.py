@@ -1187,7 +1187,7 @@ def grade_roster_data(conn, class_id):
     cur.execute(
         """
         SELECT s.name, s.no, c.name, t.name, co.semester,
-               IFNULL(e.score, '未录入')
+               e.score
         FROM enrollment e
         JOIN student s ON e.student_id = s.id
         JOIN course_offering co ON e.offering_id = co.id
