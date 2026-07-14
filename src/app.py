@@ -1,6 +1,10 @@
 """学生成绩管理系统 —— Streamlit 主入口（导航 + 页面路由）"""
 
+import csv
+import os
 import streamlit as st
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 from core.config import get_connection
 from pages.student import (
     show_courses_page,
@@ -74,9 +78,31 @@ def _validate_login_input(user_input: str) -> str | None:
 def _login_page():
     """登录页面：验证学号/工号，识别角色并写入 session_state"""
     st.title("学生成绩管理系统")
-    user_input = st.text_input(
-        "请输入学号/工号（教务输入 admin）", max_chars=20,
-    )
+
+    def _on_quick_select():
+        st.session_state.login_input = st.session_state.quick_select
+
+    # 从 CSV 读取测试账号
+    _test_accounts = [("管理员", "admin")]
+    with open(os.path.join(_ROOT, "data", "teacher.csv"), encoding="utf-8") as _f:
+        for _r in csv.DictReader(_f):
+            if _r.get("status", "1") == "1":
+                _test_accounts.append((f"教师 {_r['name']}", _r["no"]))
+                if sum(1 for a in _test_accounts if "教师" in a[0]) >= 3:
+                    break
+    with open(os.path.join(_ROOT, "data", "student.csv"), encoding="utf-8") as _f:
+        for _r in csv.DictReader(_f):
+            if _r.get("status", "1") == "1":
+                _test_accounts.append((f"学生 {_r['name']}", _r["no"]))
+                if sum(1 for a in _test_accounts if "学生" in a[0]) >= 3:
+                    break
+    _labels, _vals = zip(*_test_accounts)
+
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        user_input = st.text_input("请输入学号/工号", max_chars=20, key="login_input")
+    with col2:
+        st.selectbox("快速选择", _labels, key="quick_select", on_change=_on_quick_select, label_visibility="collapsed")
     if st.button("登录"):
         # 格式校验
         err = _validate_login_input(user_input)
