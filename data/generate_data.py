@@ -72,10 +72,19 @@ def main():
             if m in ("计算机科学与技术", "软件工程"):
                 make_class(g, m)
 
+    # 班级状态：2022级 80%毕业, 2023级 30%毕业, 2024级全在读
+    def _cls_status(grade):
+        if grade == "2022":
+            return 0 if random.random() < 0.8 else 1
+        elif grade == "2023":
+            return 0 if random.random() < 0.3 else 1
+        return 1
+
     with open(os.path.join(DATA_DIR, "class.csv"), "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["name", "grade", "major"])
-        w.writerows(class_list)
+        w.writerow(["name", "grade", "major", "status"])
+        for c in class_list:
+            w.writerow((*c, _cls_status(c[1])))
     print(f"班级: {len(class_list)} 个")
 
     # ═══════════════════════════════════════════
@@ -93,10 +102,13 @@ def main():
         phone = f"138{random.randint(10000000, 99999999)}"
         teacher_list.append((name, no, title, phone))
 
+    # 教师：约 10% 离职
     with open(os.path.join(DATA_DIR, "teacher.csv"), "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["name", "no", "title", "phone"])
-        w.writerows(teacher_list)
+        w.writerow(["name", "no", "title", "phone", "status"])
+        for t in teacher_list:
+            st = 0 if random.random() < 0.1 else 1
+            w.writerow((*t, st))
     print(f"教师: {len(teacher_list)} 人")
 
     # ═══════════════════════════════════════════
@@ -148,10 +160,18 @@ def main():
             sno = str(base + si)
             student_list.append((name, sno, cname))
 
+    # 学生：约 15% 离校
     with open(os.path.join(DATA_DIR, "student.csv"), "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["name", "no", "class_name"])
-        w.writerows(student_list)
+        w.writerow(["name", "no", "class_name", "status"])
+        for s in student_list:
+            st = 0 if random.random() < 0.15 else 1
+            # 如果学生所属班级已毕业，更可能离校
+            sgrade = int(s[2][:4])
+            cls_is_graduated = random.random() < 0.6 if sgrade == 2022 else random.random() < 0.2 if sgrade == 2023 else False
+            if cls_is_graduated:
+                st = 0
+            w.writerow((*s, st))
     print(f"学生: {len(student_list)} 人")
 
     # ═══════════════════════════════════════════

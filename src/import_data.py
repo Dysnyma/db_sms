@@ -48,10 +48,11 @@ def main():
         n = import_csv(
             cursor,
             f"{DATA_DIR}/class.csv",
-            "INSERT INTO class (name, grade, major) VALUES (%s, %s, %s)",
+            "INSERT INTO class (name, grade, major, status) VALUES (%s, %s, %s, %s)",
             "name",
             "grade",
             "major",
+            "status",
         )
         log(f"班级：{n} 条")
 
@@ -59,11 +60,12 @@ def main():
         n = import_csv(
             cursor,
             f"{DATA_DIR}/teacher.csv",
-            "INSERT INTO teacher (name, no, title, phone) VALUES (%s, %s, %s, %s)",
+            "INSERT INTO teacher (name, no, title, phone, status) VALUES (%s, %s, %s, %s, %s)",
             "name",
             "no",
             "title",
             "phone",
+            "status",
         )
         log(f"教师：{n} 条")
 
@@ -97,11 +99,12 @@ def main():
         n = import_csv(
             cursor,
             f"{DATA_DIR}/student.csv",
-            """INSERT INTO student (name, no, class_id)
-               SELECT %s, %s, c.id FROM class c
+            """INSERT INTO student (name, no, class_id, status)
+               SELECT %s, %s, c.id, %s FROM class c
                WHERE c.name = %s""",
             "name",
             "no",
+            "status",
             "class_name",
         )
         log(f"学生：{n} 条")
