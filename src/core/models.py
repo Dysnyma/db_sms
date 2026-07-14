@@ -71,14 +71,13 @@ class TeacherCreate(BaseModel):
 
     @field_validator("no")
     @classmethod
-    def check_no(cls, v: str) -> str:
+    def check_teacher_no(cls, v: str) -> str:
+        import re
         v = v.strip()
-        if not v.isdigit():
-            raise ValueError("只能包含数字，不能有字母或符号")
-        if len(v) < 5:
-            raise ValueError("长度不能少于 5 位")
+        if not re.match(r"^T\d+$", v):
+            raise ValueError("工号格式错误，示例：T20240001（T 开头 + 数字）")
         if len(v) > 20:
-            raise ValueError("长度不能超过 20 位")
+            raise ValueError("工号长度不能超过 20 位")
         return v
 
     @field_validator("phone")
@@ -156,14 +155,13 @@ class TeacherQuery(BaseModel):
 
     @field_validator("no")
     @classmethod
-    def check_no(cls, v: str) -> str:
+    def check_teacher_no(cls, v: str) -> str:
+        import re
         v = v.strip()
-        if not v.isdigit():
-            raise ValueError("只能包含数字，不能有字母或符号")
-        if len(v) < 5:
-            raise ValueError("长度不能少于 5 位")
+        if not re.match(r"^T\d+$", v):
+            raise ValueError("工号格式错误，示例：T20240001（T 开头 + 数字）")
         if len(v) > 20:
-            raise ValueError("长度不能超过 20 位")
+            raise ValueError("工号长度不能超过 20 位")
         return v
 
 
