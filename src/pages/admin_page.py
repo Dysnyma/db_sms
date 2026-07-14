@@ -618,11 +618,8 @@ def class_manage_page(conn):
 
     elif mode == "删除":
         sel = st.selectbox("选择要删除的班级", labels, key="class_del_sel")
-        if sel:
-            with st.popover("确认删除？", use_container_width=True):
-                st.warning("⚠️ 此操作不可恢复")
-                if st.button("确认删除", type="primary"):
-                    class_id = label_map[sel]
+        if sel and st.button("确认删除", type="primary"):
+            class_id = label_map[sel]
             try:
                 with conn.cursor() as cur:
                     cur.execute("UPDATE class SET is_deleted=1 WHERE id=%s", [class_id])
@@ -746,11 +743,8 @@ def course_manage_page(conn):
 
     elif mode == "删除":
         sel = st.selectbox("选择要删除的课程", labels, key="course_del_sel")
-        if sel:
-            with st.popover("确认删除？", use_container_width=True):
-                st.warning("⚠️ 此操作不可恢复")
-                if st.button("确认删除", type="primary"):
-                    cid = lmap[sel]
+        if sel and st.button("确认删除", type="primary"):
+            cid = lmap[sel]
             try:
                 with conn.cursor() as cur:
                     cur.execute("UPDATE course SET is_deleted=1 WHERE id=%s", [cid])
@@ -778,19 +772,16 @@ def enrollment_manage_page(conn):
 
     emap = {f"#{r[0]} {r[1]} → {r[3]} ({r[5]})": r[0] for r in rows}
     sel = st.selectbox("选择要退选的记录", list(emap.keys()))
-    if sel:
-        with st.popover("确认强制退选？", use_container_width=True):
-            st.warning("⚠️ 此操作不可恢复")
-            if st.button("确认退选", type="primary"):
-                try:
-                    with conn.cursor() as cur:
-                        cur.execute("UPDATE enrollment SET is_deleted=1 WHERE id=%s", [emap[sel]])
-                    conn.commit()
-                    st.session_state.msg = ("success", "退选成功")
-                except pymysql.Error as e:
-                    conn.rollback()
-                    st.error(f"退选失败：{e}")
-                st.rerun()
+    if sel and st.button("强制退选", type="primary"):
+        try:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE enrollment SET is_deleted=1 WHERE id=%s", [emap[sel]])
+            conn.commit()
+            st.session_state.msg = ("success", "退选成功")
+        except pymysql.Error as e:
+            conn.rollback()
+            st.error(f"退选失败：{e}")
+        st.rerun()
 
 
 def teacher_manage_page(conn):
@@ -900,11 +891,8 @@ def teacher_manage_page(conn):
 
     elif mode == "删除":
         sel = st.selectbox("选择要删除的教师", labels, key="t_del")
-        if sel:
-            with st.popover("确认删除？", use_container_width=True):
-                st.warning("⚠️ 此操作不可恢复")
-                if st.button("确认删除", type="primary"):
-                    tid = lmap[sel]
+        if sel and st.button("确认删除", type="primary"):
+            tid = lmap[sel]
             try:
                 with conn.cursor() as cur:
                     cur.execute("UPDATE teacher SET is_deleted=1 WHERE id=%s", [tid])
@@ -1030,11 +1018,8 @@ def student_manage_page(conn):
 
     elif mode == "删除":
         sel = st.selectbox("选择要删除的学生", slabels, key="s_del")
-        if sel:
-            with st.popover("确认删除？", use_container_width=True):
-                st.warning("⚠️ 此操作不可恢复")
-                if st.button("确认删除", type="primary"):
-                    stid = slmap[sel]
+        if sel and st.button("确认删除", type="primary"):
+            stid = slmap[sel]
             try:
                 with conn.cursor() as cur:
                     cur.execute("UPDATE student SET is_deleted=1 WHERE id=%s", [stid])
@@ -1200,11 +1185,8 @@ def offering_manage_page(conn):
 
     elif mode == "删除":
         sel = st.selectbox("选择要删除的排课", list(olmap.keys()), key="o_del")
-        if sel:
-            with st.popover("确认删除？", use_container_width=True):
-                st.warning("⚠️ 此操作不可恢复")
-                if st.button("确认删除", type="primary"):
-                    oid = olmap[sel]
+        if sel and st.button("确认删除", type="primary"):
+            oid = olmap[sel]
             try:
                 with conn.cursor() as cur:
                     cur.execute(
@@ -1248,10 +1230,8 @@ def major_manage_page(_conn):
     st.divider()
     if majors:
         del_sel = st.selectbox("选择要删除的专业", majors, key="ma_del")
-        with st.popover("确认删除？", use_container_width=True):
-            st.warning("⚠️ 此操作不可恢复")
-            if st.button("确认删除", type="primary"):
-                cur = _conn.cursor()
+        if st.button("删除专业", type="primary"):
+            cur = _conn.cursor()
             cur.execute(
                 "SELECT COUNT(*) FROM class WHERE major = %s AND is_deleted = 0",
                 [del_sel],
