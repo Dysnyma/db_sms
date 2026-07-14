@@ -1,19 +1,5 @@
 """学生成绩管理系统 —— Streamlit 主入口（导航 + 页面路由）"""
 
-import csv
-import os
-import streamlit as st
-
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-from core.config import get_connection
-from pages.student import (
-    show_courses_page,
-    my_grades_page,
-    semester_avg_page,
-    enroll_page,
-    unenroll_page,
-)
-from pages.teacher import grade_input_page, batch_grade_page, my_students_page
 from pages.admin_page import (
     summary_page,
     roster_page,
@@ -31,8 +17,41 @@ from pages.admin_page import (
     backup_page,
     restore_page,
 )
+from pages.teacher import grade_input_page, batch_grade_page, my_students_page
+from pages.student import (
+    show_courses_page,
+    my_grades_page,
+    semester_avg_page,
+    enroll_page,
+    unenroll_page,
+)
+from core.config import get_connection
+import streamlit as st
 
 st.set_page_config(page_title="学生成绩管理系统", page_icon="🎓", layout="wide")
+
+
+@st.cache_data(ttl=300)
+def _get_test_accounts():
+    """从数据库读取测试账号列表，缓存 5 分钟"""
+    accounts = [("admin", "admin")]
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT no FROM teacher WHERE is_deleted=0 AND status=1 ORDER BY id LIMIT 3"
+        )
+        for r in cur.fetchall():
+            accounts.append((r[0], r[0]))
+        cur.execute(
+            "SELECT no FROM student WHERE is_deleted=0 AND status=1 ORDER BY id LIMIT 3"
+        )
+        for r in cur.fetchall():
+            accounts.append((r[0], r[0]))
+        conn.close()
+    except Exception:
+        pass  # 数据库不可用时仅保留 admin
+    return accounts
 
 
 def _make_page(fn, *args):
@@ -82,21 +101,8 @@ def _login_page():
     def _on_quick_select():
         st.session_state.login_input = st.session_state.quick_select
 
-    # 从 CSV 读取测试账号
-    _test_accounts = [("admin", "admin")]
-    with open(os.path.join(_ROOT, "data", "teacher.csv"), encoding="utf-8") as _f:
-        for _r in csv.DictReader(_f):
-            if _r.get("status", "1") == "1":
-                _test_accounts.append((_r["no"], _r["no"]))
-                if sum(1 for a in _test_accounts if a[1].startswith("T")) >= 3:
-                    break
-    with open(os.path.join(_ROOT, "data", "student.csv"), encoding="utf-8") as _f:
-        for _r in csv.DictReader(_f):
-            if _r.get("status", "1") == "1":
-                _test_accounts.append((_r["no"], _r["no"]))
-                if sum(1 for a in _test_accounts if a[1].isdigit()) >= 3:
-                    break
-    _labels, _vals = zip(*_test_accounts)
+    _test_accounts = _get_test_accounts()
+    _labels = [a[0] for a in _test_accounts]
 
     user_input = st.text_input("账号", max_chars=20, key="login_input", placeholder="请输入学号/工号")
     st.selectbox("快速选择", _labels, key="quick_select", on_change=_on_quick_select)
