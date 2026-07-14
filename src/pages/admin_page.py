@@ -4,6 +4,7 @@ import os
 import subprocess
 from datetime import datetime
 import pandas as pd
+import plotly.express as px
 import pymysql
 import streamlit as st
 from admin import (
@@ -68,10 +69,84 @@ def _check_times(start_date, start_hour, start_min,
 
 def summary_page(conn):
     """数据概览页面"""
+    cur = conn.cursor()
+
+    # ── 总量指标 ──
     data = summary(conn, False)
     cols = st.columns(6)
     for i, (label, val) in enumerate(data.items()):
         cols[i % 6].metric(label, val)
+
+    st.divider()
+
+    # ── 分布查询 ──
+    # 学生状态
+    cur.execute(
+        "SELECT CASE status WHEN 1 THEN '在读' ELSE '离校' END, COUNT(*) "
+        "FROM student WHERE is_deleted=0 GROUP BY status"
+    )
+    stu_status = cur.fetchall()
+
+    # 班级状态
+    cur.execute(
+        "SELECT CASE status WHEN 1 THEN '在读' ELSE '毕业' END, COUNT(*) "
+        "FROM class WHERE is_deleted=0 GROUP BY status"
+    )
+    cls_status = cur.fetchall()
+
+    # 教师状态
+    cur.execute(
+        "SELECT CASE status WHEN 1 THEN '在职' ELSE '离职' END, COUNT(*) "
+        "FROM teacher WHERE is_deleted=0 GROUP BY status"
+    )
+    tch_status = cur.fetchall()
+
+    # 各专业班级数
+    cur.execute(
+        "SELECT major, COUNT(*) FROM class WHERE is_deleted=0 "
+        "GROUP BY major ORDER BY COUNT(*) DESC"
+    )
+    major_data = cur.fetchall()
+
+    # 各年级学生数
+    cur.execute(
+        "SELECT c.grade, COUNT(*) FROM student s "
+        "JOIN class c ON s.class_id = c.id "
+        "WHERE s.is_deleted=0 GROUP BY c.grade ORDER BY c.grade"
+    )
+    grade_data = cur.fetchall()
+
+    # ── 图表 ──
+    row2 = st.columns(3)
+    with row2[0]:
+        df = pd.DataFrame(stu_status, columns=["状态", "人数"])
+        fig = px.pie(df, values="人数", names="状态", title="学生状态分布",
+                     color="状态", color_discrete_map={"在读": "#4CAF50", "离校": "#FF9800"})
+        st.plotly_chart(fig, use_container_width=True)
+
+    with row2[1]:
+        df = pd.DataFrame(cls_status, columns=["状态", "数量"])
+        fig = px.pie(df, values="数量", names="状态", title="班级状态分布",
+                     color="状态", color_discrete_map={"在读": "#4CAF50", "毕业": "#FF9800"})
+        st.plotly_chart(fig, use_container_width=True)
+
+    with row2[2]:
+        df = pd.DataFrame(tch_status, columns=["状态", "人数"])
+        fig = px.pie(df, values="人数", names="状态", title="教师状态分布",
+                     color="状态", color_discrete_map={"在职": "#4CAF50", "离职": "#FF9800"})
+        st.plotly_chart(fig, use_container_width=True)
+
+    row3 = st.columns(2)
+    with row3[0]:
+        df = pd.DataFrame(major_data, columns=["专业", "班级数"])
+        fig = px.bar(df, x="专业", y="班级数", title="各专业班级数", text_auto=True)
+        fig.update_layout(xaxis_tickangle=-30)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with row3[1]:
+        df = pd.DataFrame(grade_data, columns=["年级", "学生数"])
+        fig = px.bar(df, x="年级", y="学生数", title="各年级学生数", text_auto=True)
+        st.plotly_chart(fig, use_container_width=True)
 
 
 def roster_page(conn):
