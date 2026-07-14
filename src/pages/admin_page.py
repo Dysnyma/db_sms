@@ -44,20 +44,8 @@ def _sem_options():
     ]
 
 
-def _check_times(start_date, start_hour, start_min,
-                 end_date, end_hour, end_min,
-                 deadline_date, deadline_hour, deadline_min):
+def _check_times(start_dt, end_dt, deadline_dt):
     """校验时间顺序：开始 ≤ 截止 ≤ 成绩截止"""
-    try:
-        start_dt = datetime.strptime(
-            f"{start_date} {start_hour:02d}:{start_min:02d}:00", "%Y-%m-%d %H:%M:%S")
-        end_dt = datetime.strptime(
-            f"{end_date} {end_hour:02d}:{end_min:02d}:00", "%Y-%m-%d %H:%M:%S")
-        deadline_dt = datetime.strptime(
-            f"{deadline_date} {deadline_hour:02d}:{deadline_min:02d}:00", "%Y-%m-%d %H:%M:%S")
-    except ValueError:
-        st.error("日期或时间无效")
-        return False
     if not (start_dt <= end_dt):
         st.error("选课开始时间必须 ≤ 选课截止时间")
         return False
@@ -1084,45 +1072,11 @@ def offering_manage_page(conn):
         # 学期下拉：当前年份前后各3年
         sem = st.selectbox("学期", _sem_options(), key="oa_sem")
         max_s = st.text_input("上限", value="30", key="oa_max", max_chars=5, placeholder="上限 1~99999", help="选课人数上限，1~99999")
-        st.caption("选课开始")
-        c1, c2, c3 = st.columns([3, 1, 1])
-        start_date = c1.date_input(
-            "日期", key="oa_start_date", label_visibility="collapsed"
-        )
-        start_hour = c2.selectbox(
-            "时", options=range(24), index=0,
-            key="oa_start_hour", label_visibility="collapsed",
-        )
-        start_min = c3.selectbox(
-            "分", options=range(60), index=0,
-            key="oa_start_min", label_visibility="collapsed",
-        )
-        st.caption("选课截止")
-        c1, c2, c3 = st.columns([3, 1, 1])
-        end_date = c1.date_input(
-            "日期", key="oa_end_date", label_visibility="collapsed"
-        )
-        end_hour = c2.selectbox(
-            "时", options=range(24), index=23,
-            key="oa_end_hour", label_visibility="collapsed",
-        )
-        end_min = c3.selectbox(
-            "分", options=range(60), index=59,
-            key="oa_end_min", label_visibility="collapsed",
-        )
-        st.caption("成绩截止")
-        c1, c2, c3 = st.columns([3, 1, 1])
-        dl_date = c1.date_input(
-            "日期", key="oa_deadline_date", label_visibility="collapsed"
-        )
-        dl_hour = c2.selectbox(
-            "时", options=range(24), index=23,
-            key="oa_dl_hour", label_visibility="collapsed",
-        )
-        dl_min = c3.selectbox(
-            "分", options=range(60), index=59,
-            key="oa_dl_min", label_visibility="collapsed",
-        )
+        from datetime import timedelta
+        _now = datetime.now().replace(second=0, microsecond=0)
+        start_dt = st.datetime_input("选课开始", value=_now, format="YYYY/MM/DD HH:mm", step=600, key="oa_start")
+        end_dt = st.datetime_input("选课截止", value=_now + timedelta(days=60), format="YYYY/MM/DD HH:mm", step=600, key="oa_end")
+        deadline_dt = st.datetime_input("成绩截止", value=_now + timedelta(days=180), format="YYYY/MM/DD HH:mm", step=600, key="oa_deadline")
         if st.button("新增排课", key="btn_oa"):
             if not teachers:
                 st.error("该课程暂无能上的教师，请重新选择课程")
@@ -1134,11 +1088,7 @@ def offering_manage_page(conn):
                     return
                 if max_s_val > 99999:
                     st.error("选课上限不能超过 99999")
-                elif not _check_times(
-                    start_date, start_hour, start_min,
-                    end_date, end_hour, end_min,
-                    dl_date, dl_hour, dl_min,
-                ):
+                elif not _check_times(start_dt, end_dt, deadline_dt):
                     pass
                 else:
                     try:
@@ -1153,18 +1103,16 @@ def offering_manage_page(conn):
                                     tlmap[tid],
                                     sem,
                                     max_s_val,
-                                    f"{start_date} {start_hour:02d}:{start_min:02d}:00",
-                                    f"{end_date} {end_hour:02d}:{end_min:02d}:00",
-                                    f"{dl_date} {dl_hour:02d}:{dl_min:02d}:00",
+                                    start_dt.strftime("%Y-%m-%d %H:%M:%S"),
+                                    end_dt.strftime("%Y-%m-%d %H:%M:%S"),
+                                    deadline_dt.strftime("%Y-%m-%d %H:%M:%S"),
                                 ],
                             )
                         conn.commit()
                         st.session_state.msg = ("success", "新增成功")
                         for k in [
                             "oa_course", "oa_teacher", "oa_sem", "oa_max",
-                            "oa_start_date", "oa_start_hour", "oa_start_min",
-                            "oa_end_date", "oa_end_hour", "oa_end_min",
-                            "oa_deadline_date", "oa_dl_hour", "oa_dl_min",
+                            "oa_start", "oa_end", "oa_deadline",
                         ]:
                             st.session_state.pop(k, None)
                         st.rerun()
@@ -1197,61 +1145,9 @@ def offering_manage_page(conn):
                     "学期", sem_opts, index=sem_opts.index(cur_sem), key=f"oe_sem_{oid}"
                 )
                 new_max = st.text_input("上限", value=str(row[1]), key=f"oe_max_{oid}", max_chars=5, placeholder="上限 1~99999", help="选课人数上限，1~99999")
-                # 日期+时间 拆分
-                s_d, s_t = str(row[2])[:10], str(row[2])[11:16]
-                e_d, e_t = str(row[3])[:10], str(row[3])[11:16]
-                d_d, d_t = str(row[4])[:10], str(row[4])[11:16]
-                s_h, s_m = s_t.split(":")
-                e_h, e_m = e_t.split(":")
-                d_h, d_m = d_t.split(":")
-                st.caption("选课开始")
-                c1, c2, c3 = st.columns([3, 1, 1])
-                new_sd = c1.date_input(
-                    "日期",
-                    value=datetime.strptime(s_d, "%Y-%m-%d").date(),
-                    key=f"oe_start_date_{oid}",
-                    label_visibility="collapsed",
-                )
-                new_sh = c2.selectbox(
-                    "时", options=range(24), index=int(s_h),
-                    key=f"oe_start_hour_{oid}", label_visibility="collapsed",
-                )
-                new_sm = c3.selectbox(
-                    "分", options=range(60), index=int(s_m),
-                    key=f"oe_start_min_{oid}", label_visibility="collapsed",
-                )
-                st.caption("选课截止")
-                c1, c2, c3 = st.columns([3, 1, 1])
-                new_ed = c1.date_input(
-                    "日期",
-                    value=datetime.strptime(e_d, "%Y-%m-%d").date(),
-                    key=f"oe_end_date_{oid}",
-                    label_visibility="collapsed",
-                )
-                new_eh = c2.selectbox(
-                    "时", options=range(24), index=int(e_h),
-                    key=f"oe_end_hour_{oid}", label_visibility="collapsed",
-                )
-                new_em = c3.selectbox(
-                    "分", options=range(60), index=int(e_m),
-                    key=f"oe_end_min_{oid}", label_visibility="collapsed",
-                )
-                st.caption("成绩截止")
-                c1, c2, c3 = st.columns([3, 1, 1])
-                new_dd = c1.date_input(
-                    "日期",
-                    value=datetime.strptime(d_d, "%Y-%m-%d").date(),
-                    key=f"oe_deadline_date_{oid}",
-                    label_visibility="collapsed",
-                )
-                new_dh = c2.selectbox(
-                    "时", options=range(24), index=int(d_h),
-                    key=f"oe_dl_hour_{oid}", label_visibility="collapsed",
-                )
-                new_dm = c3.selectbox(
-                    "分", options=range(60), index=int(d_m),
-                    key=f"oe_dl_min_{oid}", label_visibility="collapsed",
-                )
+                new_start = st.datetime_input("选课开始", value=row[2], format="YYYY/MM/DD HH:mm", step=600, key=f"oe_start_{oid}")
+                new_end = st.datetime_input("选课截止", value=row[3], format="YYYY/MM/DD HH:mm", step=600, key=f"oe_end_{oid}")
+                new_deadline = st.datetime_input("成绩截止", value=row[4], format="YYYY/MM/DD HH:mm", step=600, key=f"oe_deadline_{oid}")
                 if st.button("保存修改", key=f"save_offering_{oid}"):
                     try:
                         new_max_val = int(new_max)
@@ -1260,11 +1156,7 @@ def offering_manage_page(conn):
                         return
                     if new_max_val > 99999:
                         st.error("选课上限不能超过 99999")
-                    elif _check_times(
-                        new_sd, new_sh, new_sm,
-                        new_ed, new_eh, new_em,
-                        new_dd, new_dh, new_dm,
-                    ):
+                    elif _check_times(new_start, new_end, new_deadline):
                         try:
                             with conn.cursor() as cur:
                                 cur.execute(
@@ -1274,9 +1166,9 @@ def offering_manage_page(conn):
                                     [
                                         new_sem,
                                         new_max_val,
-                                        f"{new_sd} {new_sh:02d}:{new_sm:02d}:00",
-                                        f"{new_ed} {new_eh:02d}:{new_em:02d}:00",
-                                        f"{new_dd} {new_dh:02d}:{new_dm:02d}:00",
+                                        new_start.strftime("%Y-%m-%d %H:%M:%S"),
+                                        new_end.strftime("%Y-%m-%d %H:%M:%S"),
+                                        new_deadline.strftime("%Y-%m-%d %H:%M:%S"),
                                         oid,
                                     ],
                                 )
