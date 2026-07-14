@@ -87,14 +87,14 @@ def _login_page():
     with open(os.path.join(_ROOT, "data", "teacher.csv"), encoding="utf-8") as _f:
         for _r in csv.DictReader(_f):
             if _r.get("status", "1") == "1":
-                _test_accounts.append((f"教师 {_r['name']}", _r["no"]))
-                if sum(1 for a in _test_accounts if "教师" in a[0]) >= 3:
+                _test_accounts.append((_r["no"], _r["no"]))
+                if sum(1 for a in _test_accounts if a[1].startswith("T")) >= 3:
                     break
     with open(os.path.join(_ROOT, "data", "student.csv"), encoding="utf-8") as _f:
         for _r in csv.DictReader(_f):
             if _r.get("status", "1") == "1":
-                _test_accounts.append((f"学生 {_r['name']}", _r["no"]))
-                if sum(1 for a in _test_accounts if "学生" in a[0]) >= 3:
+                _test_accounts.append((_r["no"], _r["no"]))
+                if sum(1 for a in _test_accounts if a[1].isdigit()) >= 3:
                     break
     _labels, _vals = zip(*_test_accounts)
 
