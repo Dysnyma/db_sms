@@ -166,33 +166,64 @@ def roster_page(conn):
     df = pd.DataFrame(rows, columns=["学号", "姓名", "学籍分", "绩点分"])
     st.dataframe(df, use_container_width=True)
 
-    # 学籍分 / 绩点分统计报表
+    # 学籍分 / 绩点分统计报表（饼图）
     scores = [float(r[2]) for r in rows if r[2] is not None]
     gpas = [float(r[3]) for r in rows if r[3] is not None]
-    total_s = len(scores)
-    total_g = len(gpas)
 
-    st.divider()
-    st.subheader("📊 班级统计报表")
+    if scores:
+        st.divider()
+        st.subheader("📊 班级统计报表")
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("学籍分 ≥ 90（优秀）", f"{sum(1 for s in scores if s >= 90) / total_s * 100:.1f}%" if total_s else "-")
-    c2.metric("学籍分 ≥ 80（良好）", f"{sum(1 for s in scores if s >= 80) / total_s * 100:.1f}%" if total_s else "-")
-    c3.metric("学籍分 ≥ 70（中等）", f"{sum(1 for s in scores if s >= 70) / total_s * 100:.1f}%" if total_s else "-")
-    c4.metric("学籍分 ≥ 60（及格）", f"{sum(1 for s in scores if s >= 60) / total_s * 100:.1f}%" if total_s else "-")
+        def _bucket(v, thresholds, labels):
+            for i, t in enumerate(thresholds):
+                if v >= t:
+                    return labels[i]
+            return labels[-1]
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("绩点分 ≥ 4.0（优秀）", f"{sum(1 for g in gpas if g >= 4.0) / total_g * 100:.1f}%" if total_g else "-")
-    c2.metric("绩点分 ≥ 3.0（良好）", f"{sum(1 for g in gpas if g >= 3.0) / total_g * 100:.1f}%" if total_g else "-")
-    c3.metric("绩点分 ≥ 2.0（中等）", f"{sum(1 for g in gpas if g >= 2.0) / total_g * 100:.1f}%" if total_g else "-")
-    c4.metric("绩点分 ≥ 1.5（及格）", f"{sum(1 for g in gpas if g >= 1.5) / total_g * 100:.1f}%" if total_g else "-")
+        score_thresholds = [90, 80, 70, 60, 0]
+        score_labels = ["优秀 ≥90", "良好 80~89", "中等 70~79", "及格 60~69", "不及格 <60"]
+        gpa_thresholds = [4.0, 3.0, 2.0, 1.5, 0]
+        gpa_labels = ["优秀 ≥4.0", "良好 3.0~3.9", "中等 2.0~2.9", "及格 1.5~1.9", "不及格 <1.5"]
 
-    # 班级均分
-    avg_s = sum(scores) / total_s if total_s else 0
-    avg_g = sum(gpas) / total_g if total_g else 0
-    c1, c2 = st.columns(2)
-    c1.metric("班级学籍均分", f"{avg_s:.1f}")
-    c2.metric("班级绩点均分", f"{avg_g:.2f}")
+        c1, c2 = st.columns(2)
+        with c1:
+            df_s = pd.DataFrame({
+                "等级": [_bucket(s, score_thresholds, score_labels) for s in scores],
+                "学籍分": scores,
+            })
+            grp = df_s.groupby("等级", sort=False).size().reset_index(name="人数")
+            fig = px.pie(grp, values="人数", names="等级", title="学籍分分布",
+                         color="等级",
+                         color_discrete_map={
+                             "优秀 ≥90": "#4CAF50", "良好 80~89": "#8BC34A",
+                             "中等 70~79": "#FFC107", "及格 60~69": "#FF9800",
+                             "不及格 <60": "#f44336",
+                         })
+            fig.update_traces(textinfo="label+percent")
+            st.plotly_chart(fig, use_container_width=True)
+
+        with c2:
+            df_g = pd.DataFrame({
+                "等级": [_bucket(g, gpa_thresholds, gpa_labels) for g in gpas],
+                "绩点分": gpas,
+            })
+            grp = df_g.groupby("等级", sort=False).size().reset_index(name="人数")
+            fig = px.pie(grp, values="人数", names="等级", title="绩点分分布",
+                         color="等级",
+                         color_discrete_map={
+                             "优秀 ≥4.0": "#4CAF50", "良好 3.0~3.9": "#8BC34A",
+                             "中等 2.0~2.9": "#FFC107", "及格 1.5~1.9": "#FF9800",
+                             "不及格 <1.5": "#f44336",
+                         })
+            fig.update_traces(textinfo="label+percent")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # 班级均分
+        avg_s = sum(scores) / len(scores)
+        avg_g = sum(gpas) / len(gpas)
+        c1, c2 = st.columns(2)
+        c1.metric("班级学籍均分", f"{avg_s:.1f}")
+        c2.metric("班级绩点均分", f"{avg_g:.2f}")
 
 
 def class_report_page(conn):
