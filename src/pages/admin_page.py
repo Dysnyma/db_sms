@@ -34,8 +34,6 @@ from core.models import (
     validate_or_error,
 )
 from core.majors import all_majors, add_major, delete_major
-from streamlit import cache_data as _cache_data
-_cached_majors = _cache_data(ttl=60)(all_majors)
 
 
 # ── 缓存辅助（60 秒内不重复查询） ──
@@ -52,38 +50,6 @@ def _cached_course_list():
     conn = get_connection()
     try:
         return course_list(conn)
-    finally:
-        conn.close()
-
-@st.cache_data(ttl=60)
-def _cached_teacher_full_list():
-    conn = get_connection()
-    try:
-        return teacher_full_list(conn)
-    finally:
-        conn.close()
-
-@st.cache_data(ttl=60)
-def _cached_student_full_list():
-    conn = get_connection()
-    try:
-        return student_full_list(conn)
-    finally:
-        conn.close()
-
-@st.cache_data(ttl=60)
-def _cached_offering_full_list():
-    conn = get_connection()
-    try:
-        return offering_full_list(conn)
-    finally:
-        conn.close()
-
-@st.cache_data(ttl=60)
-def _cached_enrollment_list():
-    conn = get_connection()
-    try:
-        return enrollment_list(conn)
     finally:
         conn.close()
 
@@ -593,7 +559,7 @@ def class_manage_page(conn):
         this_year = datetime.now().year
         grade_opts = [str(y) for y in range(this_year - 5, this_year + 5)]
         grade = st.selectbox("年级", grade_opts, index=5, key="ca_grade")
-        majors = _cached_majors()
+        majors = all_majors()
         major = st.selectbox("专业", majors, key="ca_major")
 
         # 自动生成班级名预览
@@ -809,7 +775,7 @@ def enrollment_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = _cached_enrollment_list()
+    rows = enrollment_list(conn)
     if not rows:
         st.info("暂无选课记录")
         return
@@ -837,7 +803,7 @@ def teacher_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = _cached_teacher_full_list()
+    rows = teacher_full_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "姓名", "工号", "职称", "电话", "状态"])
     st.dataframe(df, use_container_width=True)
 
@@ -957,7 +923,7 @@ def student_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = _cached_student_full_list()
+    rows = student_full_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "姓名", "学号", "班级ID", "班级", "状态"])
     st.dataframe(df, use_container_width=True)
     classes = _cached_class_list()
@@ -1084,7 +1050,7 @@ def offering_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = _cached_offering_full_list()
+    rows = offering_full_list(conn)
     df = pd.DataFrame(
         rows,
         columns=[
@@ -1254,7 +1220,7 @@ def major_manage_page(_conn):
         _, m = st.session_state.pop("msg")
         st.success(m)
 
-    majors = _cached_majors()
+    majors = all_majors()
     df = pd.DataFrame(majors, columns=["专业名称"])
     st.dataframe(df, use_container_width=True)
 
