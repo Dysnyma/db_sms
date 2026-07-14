@@ -182,7 +182,7 @@ def main():
             continue
         for sem in random.sample(semesters, random.randint(2, 4)):
             tno = random.choice(qualified)
-            max_s = random.randint(30, 80)
+            max_s = random.randint(60, 120)
             start_d, enroll_end, deadline_d = sem_times[sem]
             offering_list.append((
                 cname, tno, sem, max_s,
@@ -213,6 +213,7 @@ def main():
 
     enrollment_list = []  # (student_no, course_name, teacher_no, semester, score)
     used_enrollment = set()
+    offering_used = [0] * len(offering_list)  # 已选人数跟踪
 
     for sname, sno, cname in student_list:
         sgrade = int(cname[:4])
@@ -236,7 +237,11 @@ def main():
                 key = (sno, oi)
                 if key in used_enrollment:
                     continue
+                # 检查选课容量
+                if offering_used[oi] >= offering_list[oi][3]:
+                    continue
                 used_enrollment.add(key)
+                offering_used[oi] += 1
                 cn, tn, sem_s, *_ = offering_list[oi]
                 score = round(random.gauss(75, 15), 1)
                 score = max(0, min(100, score))
