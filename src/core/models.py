@@ -20,6 +20,8 @@ _FIELD_LABELS = {
     ("CourseCreate", "credit"): "学分",
     ("SemesterQuery", "semester"): "学期",
     ("TeacherQuery", "no"): "教师工号",
+    ("GradeRecord", "sno"): "学生学号",
+    ("GradeRecord", "score"): "成绩",
 }
 
 # Pydantic 错误类型 → 中文模板
@@ -162,6 +164,26 @@ class TeacherQuery(BaseModel):
             raise ValueError("长度不能少于 5 位")
         if len(v) > 20:
             raise ValueError("长度不能超过 20 位")
+        return v
+
+
+# ── 成绩录入 ──
+
+class GradeRecord(BaseModel):
+    """成绩录入"""
+    sno: str = Field(..., title="学生学号")
+    score: float = Field(..., ge=0, le=100)
+
+    @field_validator("sno")
+    @classmethod
+    def check_sno(cls, v: str) -> str:
+        v = v.strip()
+        if not v.isdigit():
+            raise ValueError("只能包含数字，不能有字母或符号")
+        if len(v) < 8:
+            raise ValueError("长度不能少于 8 位")
+        if len(v) > 12:
+            raise ValueError("长度不能超过 12 位")
         return v
 
 

@@ -13,6 +13,7 @@ if _src not in sys.path:
     sys.path.insert(0, _src)
 
 from teacher_tui import teacher_offerings, offering_students
+from core.models import GradeRecord, validate_or_error
 
 
 def grade_input_page(conn, tno):
@@ -35,21 +36,27 @@ def grade_input_page(conn, tno):
     st.dataframe(df, use_container_width=True)
 
     col1, col2, col3 = st.columns(3)
-    sno = col1.text_input("学生学号")
-    score = col2.text_input("成绩 (0-100)")
+    sno = col1.text_input(
+        "学生学号",
+        placeholder="例如：20240001",
+        help="学号为 8-12 位纯数字",
+    )
+    score = col2.text_input(
+        "成绩",
+        placeholder="例如：88.5",
+        help="成绩为 0~100 的数值",
+    )
     if col3.button("录入", key="grade_btn"):
-        try:
-            score_val = float(score)
-        except ValueError:
-            st.error("成绩必须是数字")
-            st.stop()
+        data = validate_or_error(GradeRecord, sno=sno, score=score)
+        if data is None:
+            return
         try:
             cur = conn.cursor()
-            cur.callproc("sp_grade_input", [tno, plan_id, sno, score_val])
+            cur.callproc("sp_grade_input", [tno, plan_id, data["sno"], data["score"]])
             conn.commit()
             cur.fetchall()
             cur.nextset()
-            st.session_state.msg = ("success", f"{sno} → {score}")
+            st.session_state.msg = ("success", f"{data['sno']} → {data['score']}")
             st.rerun()
         except pymysql.Error as e:
             st.error(str(e))
