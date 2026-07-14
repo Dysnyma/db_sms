@@ -31,10 +31,14 @@ st.set_page_config(page_title="学生成绩管理系统", page_icon="🎓", layo
 
 
 def _make_page(fn, *args):
-    """创建带数据库连接的导航页面包装器"""
+    """创建带数据库连接的导航页面包装器（自动归还连接到池）"""
 
     def wrapper():
-        fn(get_connection(), *args)
+        conn = get_connection()
+        try:
+            fn(conn, *args)
+        finally:
+            conn.close()
 
     wrapper.__name__ = fn.__name__
     return wrapper
@@ -46,27 +50,35 @@ def _login_page():
     user_input = st.text_input("请输入学号/工号（教务输入 admin）")
     if st.button("登录"):
         conn = get_connection()
-        cur = conn.cursor()
-        if user_input == "admin":
-            st.session_state.user = ("admin", 0, "教务管理员", "admin")
-        else:
-            cur.execute(
-                "SELECT id, name FROM teacher WHERE no=%s AND is_deleted=0",
-                [user_input],
-            )
-            row = cur.fetchone()
-            if row:
-                st.session_state.user = ("teacher", row[0], row[1], user_input)
+        try:
+            cur = conn.cursor()
+            if user_input == "admin":
+                st.session_state.user = ("admin", 0, "教务管理员", "admin")
             else:
                 cur.execute(
-                    "SELECT id, name FROM student WHERE no=%s AND is_deleted=0",
+                    "SELECT id, name FROM teacher WHERE no=%s AND is_deleted=0",
                     [user_input],
                 )
                 row = cur.fetchone()
                 if row:
-                    st.session_state.user = ("student", row[0], row[1], user_input)
+                    st.session_state.user = ("teacher", row[0], row[1], user_input)
                 else:
-                    st.error("用户不存在")
+                    cur.execute(
+                        "SELECT id, name FROM student WHERE no=%s AND is_deleted=0",
+                        [user_input],
+                    )
+                    row = cur.fetchone()
+                    if row:
+                        st.session_state.user = (
+                            "student",
+                            row[0],
+                            row[1],
+                            user_input,
+                        )
+                    else:
+                        st.error("用户不存在")
+        finally:
+            conn.close()
         if st.session_state.user:
             st.rerun()
 
