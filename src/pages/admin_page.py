@@ -166,6 +166,34 @@ def roster_page(conn):
     df = pd.DataFrame(rows, columns=["学号", "姓名", "学籍分", "绩点分"])
     st.dataframe(df, use_container_width=True)
 
+    # 学籍分 / 绩点分统计报表
+    scores = [float(r[2]) for r in rows if r[2] is not None]
+    gpas = [float(r[3]) for r in rows if r[3] is not None]
+    total_s = len(scores)
+    total_g = len(gpas)
+
+    st.divider()
+    st.subheader("📊 班级统计报表")
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("学籍分 ≥ 90（优秀）", f"{sum(1 for s in scores if s >= 90) / total_s * 100:.1f}%" if total_s else "-")
+    c2.metric("学籍分 ≥ 80（良好）", f"{sum(1 for s in scores if s >= 80) / total_s * 100:.1f}%" if total_s else "-")
+    c3.metric("学籍分 ≥ 70（中等）", f"{sum(1 for s in scores if s >= 70) / total_s * 100:.1f}%" if total_s else "-")
+    c4.metric("学籍分 ≥ 60（及格）", f"{sum(1 for s in scores if s >= 60) / total_s * 100:.1f}%" if total_s else "-")
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("绩点分 ≥ 4.0（优秀）", f"{sum(1 for g in gpas if g >= 4.0) / total_g * 100:.1f}%" if total_g else "-")
+    c2.metric("绩点分 ≥ 3.0（良好）", f"{sum(1 for g in gpas if g >= 3.0) / total_g * 100:.1f}%" if total_g else "-")
+    c3.metric("绩点分 ≥ 2.0（中等）", f"{sum(1 for g in gpas if g >= 2.0) / total_g * 100:.1f}%" if total_g else "-")
+    c4.metric("绩点分 ≥ 1.5（及格）", f"{sum(1 for g in gpas if g >= 1.5) / total_g * 100:.1f}%" if total_g else "-")
+
+    # 班级均分
+    avg_s = sum(scores) / total_s if total_s else 0
+    avg_g = sum(gpas) / total_g if total_g else 0
+    c1, c2 = st.columns(2)
+    c1.metric("班级学籍均分", f"{avg_s:.1f}")
+    c2.metric("班级绩点均分", f"{avg_g:.2f}")
+
 
 def class_report_page(conn):
     """班级成绩统计页面"""
