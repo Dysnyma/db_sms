@@ -1,17 +1,17 @@
-"""中文表格组件（基于 st-aggrid），全功能配置"""
+"""中文表格组件（基于 st-aggrid）"""
 
-from st_aggrid import AgGrid, GridOptionsBuilder, DataReturnMode, GridUpdateMode
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 _LOCALE_TEXT = {
-    # 排序
+    # 列头菜单
     "sortAscending": "升序",
     "sortDescending": "降序",
     "unSort": "取消排序",
-    # 列操作
     "columns": "列",
     "filter": "筛选",
     "searchOoo": "搜索…",
     "noMatches": "无匹配",
+    # 固定 / 隐藏
     "pinColumn": "固定列",
     "pinLeft": "固定在左",
     "pinRight": "固定在右",
@@ -19,22 +19,17 @@ _LOCALE_TEXT = {
     "hideColumn": "隐藏列",
     "autoSizeThisColumn": "自适应列宽",
     "autoSizeAllColumns": "自适应所有列",
-    "resetColumns": "重置列",
-    "tooltip": "提示",
-    # 复制 / 粘贴
+    # 导出
     "copy": "复制",
     "copyWithHeaders": "含表头复制",
-    "copyWithGroupHeaders": "含分组头复制",
     "ctrlC": "Ctrl+C",
     "ctrlX": "Ctrl+X",
     "paste": "粘贴",
-    # 导出
     "export": "导出",
     "csvExport": "导出 CSV",
     "excelExport": "导出 Excel",
-    # 剪切板
-    "copyToClipboard": "复制到剪贴板",
     # 右键菜单
+    "copyToClipboard": "复制到剪贴板",
     "addRow": "添加行",
     "deleteRow": "删除行",
     "clearFilter": "清除筛选",
@@ -48,7 +43,6 @@ _LOCALE_TEXT = {
     "first": "首页",
     "last": "末页",
     "totalRows": "总行数：",
-    "pageSize": "每页行数：",
     # 统计
     "avg": "平均",
     "min": "最小值",
@@ -56,16 +50,10 @@ _LOCALE_TEXT = {
     "sum": "总和",
     "count": "计数",
     "group": "分组",
-    "agg": "聚合",
-    # 分组
-    "rowGroupColumns": "拖入此处进行分组…",
-    "rowGroupColumnsEmptyMessage": "拖拽列头到此处按该列分组",
-    "valueColumns": "值列",
-    "pivotMode": "透视模式",
-    "pivotColumnGroupTotals": "合计",
-    # 筛选条件
+    # 通用
+    "loadingOoo": "加载中…",
+    "noRowsToShow": "暂无数据",
     "blank": "空白",
-    "notBlank": "非空白",
     "notEqual": "不等于",
     "equals": "等于",
     "lessThan": "小于",
@@ -79,23 +67,15 @@ _LOCALE_TEXT = {
     "endsWith": "结尾是",
     "true": "是",
     "false": "否",
-    # 筛选面板
     "applyFilter": "确定",
     "clearFilter": "清除",
     "reset": "重置",
-    "filterOoo": "筛选…",
-    "loadingOoo": "加载中…",
-    "noRowsToShow": "暂无数据",
-    # 列设置
-    "pinnedColumns": "固定列：",
-    "valueAggregation": "值聚合",
-    "rowGroup": "行分组",
 }
 
 
 def st_ag(df, **kwargs):
     """
-    全功能中文表格组件。
+    中文版表格组件，用法与 st.dataframe 类似。
 
     参数
     ----
@@ -104,83 +84,35 @@ def st_ag(df, **kwargs):
     use_container_width : bool
         是否撑满容器宽度（默认 True）
     height : int
-        表格高度（默认 400）
-    pagination : bool
-        是否启用分页（默认 True）
-    page_size : int
-        每页行数（默认 25）
-    selection : str | None
-        行模式："single" | "multiple" | None（默认 None，不启用勾选）
-    groupable : bool
-        是否允许拖拽分组（默认 False）
+        表格高度（默认自动）
     """
     use_container_width = kwargs.pop("use_container_width", True)
-    height = kwargs.pop("height", 400)
-    pagination = kwargs.pop("pagination", True)
-    page_size = kwargs.pop("page_size", 25)
-    selection = kwargs.pop("selection", None)
-    groupable = kwargs.pop("groupable", False)
+    height = kwargs.pop("height", None)
+    # 是否显示行号
+    show_index = not kwargs.pop("hide_index", False)
 
     gb = GridOptionsBuilder.from_dataframe(df)
-
-    # ── 全局列配置 ──
-    gb.configure_default_column(
-        sortable=True,
-        filterable=True,
-        resizable=True,
-        groupable=groupable,
-        editable=False,
-        filter="agTextColumnFilter",
-        menuTabs=["generalMenuTab", "filterMenuTab", "columnsMenuTab"],
-    )
-
-    # ── 自动识别数字列和日期列 ──
-    for col in df.columns:
-        dtype = df[col].dtype
-        if dtype in ("int64", "float64"):
-            gb.configure_column(col, filter="agNumberColumnFilter")
-        elif dtype in ("datetime64[ns]",):
-            gb.configure_column(col, filter="agDateColumnFilter")
-
-    # ── 分页 ──
-    if pagination:
-        gb.configure_pagination(enabled=True, paginationPageSize=page_size)
-        gb.configure_grid_options(paginationPageSizeSelector=[10, 25, 50, 100])
-
-    # ── 行选择 ──
-    if selection:
-        gb.configure_selection(
-            selection_mode=selection,
-            use_checkbox=True,
-            pre_selected_rows=[],
-        )
-
-    # ── 侧边栏（筛选 + 列管理） ──
-    gb.configure_side_bar(filters_panel=True, columns_panel=True)
-
-    # ── 全局选项 ──
     gb.configure_grid_options(
         localeText=_LOCALE_TEXT,
         enableCellTextSelection=True,
         ensureDomOrder=True,
-        enableCellContentClipboard=True,
-        clipboardDelimiter="\t",
-        rowHeight=35,
-        headerHeight=38,
     )
-
+    # 启用排序
+    gb.configure_default_column(
+        sortable=True,
+        filterable=False,
+        resizable=True,
+    )
     grid_options = gb.build()
 
     return AgGrid(
         df,
         gridOptions=grid_options,
         allow_unsafe_jscode=True,
-        fit_columns_on_grid_load=use_container_width,
+        fit_columns_on_grid_load=True if use_container_width else False,
         height=height,
+        # 隐藏 row 点击高亮（纯展示）
         highlight_selected_on_render=False,
         theme="streamlit",
-        enable_enterprise_modules=True,
-        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-        update_mode=GridUpdateMode.NO_UPDATE,
         **kwargs,
     )
