@@ -8,3 +8,4 @@ archive/PowerDesigner 16.5.zip
 venv/
 backup/
 .agents/
+all_py_files_merged.txt
