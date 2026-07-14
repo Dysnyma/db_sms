@@ -130,19 +130,19 @@ def teacher_list_page(conn):
 
 
 def backup_page(_conn):
-    """数据库备份页面（通过 mysqldump）"""
+    # 函数开头先消费消息（rerun 后依然能读取并显示）
+    if st.session_state.get("conn_reset_msg"):
+        st.success(st.session_state.pop("conn_reset_msg"))
+
     if st.button("备份数据库"):
         os.makedirs("backup", exist_ok=True)
         name = f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.sql'
-        # 如果你的 root 有密码，请在下方取消注释并填入密码：
-        #   "-p你的密码",   ← 注意 -p 和密码之间没有空格
         try:
             r = subprocess.run(
                 [
                     "mysqldump",
                     "-u",
                     "root",
-                    # "-p你的密码",
                     "--databases",
                     "db_sms",
                     "--routines",
@@ -164,6 +164,20 @@ def backup_page(_conn):
             st.error("未找到 mysqldump 命令，请确保 MySQL 已安装且在 PATH 中")
         except Exception as e:
             st.error(f"备份失败：{e}")
+
+    st.divider()
+
+    if st.button("🔄 重置数据库连接缓存"):
+        from core.config import get_engine
+        # 关闭当前页面传入的旧连接
+        try:
+            _conn.close()
+        except Exception:
+            pass
+        # 清空缓存的连接池引擎
+        get_engine.clear()
+        st.session_state.conn_reset_msg = "连接池引擎缓存已清空，页面将自动重建连接"
+        st.rerun()
 
 
 def _safe_decode_sql(raw: bytes) -> str:
