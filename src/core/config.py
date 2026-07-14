@@ -1,15 +1,19 @@
 """数据库连接配置"""
+import os
 import pymysql
 import streamlit as st
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
 
+load_dotenv()
+
 DB = {
-    "host": "127.0.0.1",
-    "port": 3306,
-    "user": "root",
-    "password": "",
-    "database": "db_sms",
+    "host": os.getenv("DB_HOST", "127.0.0.1"),
+    "port": int(os.getenv("DB_PORT", "3306")),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "database": os.getenv("DB_NAME", "db_sms"),
     "charset": "utf8mb4",
     "collation": "utf8mb4_unicode_ci",
 }

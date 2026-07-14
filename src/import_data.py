@@ -8,23 +8,14 @@ import csv
 import os
 import pymysql
 from datetime import datetime
-
-# ---- 配置 ----
-DB_CONFIG = {
-    "host": "127.0.0.1",
-    "port": 3306,
-    "user": "root",
-    "password": "",
-    "database": "db_sms",
-    "charset": "utf8mb4",
-}
+from core.config import DB
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 
 
 def connect():
     """创建并返回数据库连接"""
-    return pymysql.connect(**DB_CONFIG)
+    return pymysql.connect(**DB)
 
 
 def log(msg):

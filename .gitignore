@@ -9,3 +9,4 @@ venv/
 backup/
 .agents/
 all_py_files_merged.txt
+.env
