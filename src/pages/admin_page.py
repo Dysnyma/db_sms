@@ -21,7 +21,6 @@ from admin import (
     offering_full_list,
     teacher_course_teachers,
 )
-from core.config import get_connection
 from core.models import (
     ClassCreate,
     ClassUpdate,
@@ -44,6 +43,29 @@ def _sem_options():
     ]
 
 
+def _check_times(start_date, start_hour, start_min,
+                 end_date, end_hour, end_min,
+                 deadline_date, deadline_hour, deadline_min):
+    """校验时间顺序：开始 ≤ 截止 ≤ 成绩截止"""
+    try:
+        start_dt = datetime.strptime(
+            f"{start_date} {start_hour:02d}:{start_min:02d}:00", "%Y-%m-%d %H:%M:%S")
+        end_dt = datetime.strptime(
+            f"{end_date} {end_hour:02d}:{end_min:02d}:00", "%Y-%m-%d %H:%M:%S")
+        deadline_dt = datetime.strptime(
+            f"{deadline_date} {deadline_hour:02d}:{deadline_min:02d}:00", "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        st.error("日期或时间无效")
+        return False
+    if not (start_dt <= end_dt):
+        st.error("选课开始时间必须 ≤ 选课截止时间")
+        return False
+    if not (end_dt <= deadline_dt):
+        st.error("选课截止时间必须 ≤ 成绩截止时间")
+        return False
+    return True
+
+
 def summary_page(conn):
     """数据概览页面"""
     data = summary(conn, False)
@@ -54,7 +76,7 @@ def summary_page(conn):
 
 def roster_page(conn):
     """班级学生名单页面"""
-    classes = class_list(get_connection())
+    classes = class_list(conn)
     choices = {f"{r[1]} ({r[2]}级 {r[3]}) — {r[4]}": r[0] for r in classes}
     cid = choices[st.selectbox("选择班级", list(choices.keys()))]
 
@@ -73,8 +95,8 @@ def roster_page(conn):
 def class_report_page(conn):
     """班级成绩统计页面"""
     col1, col2 = st.columns(2)
-    classes = class_list(get_connection())
-    courses = course_list(get_connection())
+    classes = class_list(conn)
+    courses = course_list(conn)
     cmap = {f"{r[1]} ({r[2]}级)": r[0] for r in classes}
     gmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in courses}
     cid = col1.selectbox("选择班级", list(cmap.keys()))
@@ -97,7 +119,7 @@ def class_report_page(conn):
 
 def class_grade_roster_page(conn):
     """班级成绩明细页面"""
-    classes = class_list(get_connection())
+    classes = class_list(conn)
     cmap = {f"{r[1]} ({r[2]}级)": r[0] for r in classes}
     cid = st.selectbox("选择班级", list(cmap.keys()))
     class_id = cmap[cid]
@@ -113,8 +135,8 @@ def teacher_info_page(conn):
     """教师信息查询页面"""
     tno = st.text_input(
         "教师工号",
-        placeholder="例如：10001",
-        help="工号为 5-20 位数字",
+        placeholder="例如：T20240001",
+        help="工号格式：T 开头 + 数字，如 T20240001",
     )
     if not tno:
         return
@@ -300,7 +322,7 @@ def class_manage_page(conn):
         _, m = st.session_state.pop("msg")
         st.success(m)
 
-    rows = class_list(get_connection())
+    rows = class_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "班级名", "年级", "专业", "状态"])
     st.dataframe(df, use_container_width=True)
 
@@ -420,7 +442,7 @@ def course_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = course_list(get_connection())
+    rows = course_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "课程名", "学分", "状态"])
     st.dataframe(df, use_container_width=True)
     lmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in rows}
@@ -545,7 +567,7 @@ def enrollment_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = enrollment_list(get_connection())
+    rows = enrollment_list(conn)
     if not rows:
         st.info("暂无选课记录")
         return
@@ -573,7 +595,7 @@ def teacher_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = teacher_full_list(get_connection())
+    rows = teacher_full_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "姓名", "工号", "职称", "电话", "状态"])
     st.dataframe(df, use_container_width=True)
 
@@ -592,8 +614,8 @@ def teacher_manage_page(conn):
         )
         no = st.text_input(
             "工号",
-            placeholder="例如：10001",
-            help="工号为 5-20 位数字",
+            placeholder="例如：T20240001",
+            help="工号格式：T 开头 + 数字，如 T20240001",
             key="ta_no",
         )
         title = st.text_input(
@@ -640,8 +662,8 @@ def teacher_manage_page(conn):
             )
             new_no = st.text_input(
                 "工号", value=no,
-                placeholder="例如：10001",
-                help="工号为 5-20 位数字",
+                placeholder="例如：T20240001",
+                help="工号格式：T 开头 + 数字，如 T20240001",
                 key=f"te_no_{tid}",
             )
             new_title = st.text_input(
@@ -693,10 +715,10 @@ def student_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = student_full_list(get_connection())
+    rows = student_full_list(conn)
     df = pd.DataFrame(rows, columns=["ID", "姓名", "学号", "班级ID", "班级", "状态"])
     st.dataframe(df, use_container_width=True)
-    classes = class_list(get_connection())
+    classes = class_list(conn)
     clmap = {f"{r[1]} ({r[2]}级 {r[3]})": r[0] for r in classes}  # 班级标签→ID
     slmap = {f"{r[1]} ({r[2]})": r[0] for r in rows}  # 学生标签→ID
     simap = {r[0]: (r[1], r[2], r[3]) for r in rows}  # 学生ID→(name,no,class_id)
@@ -812,7 +834,7 @@ def offering_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = offering_full_list(get_connection())
+    rows = offering_full_list(conn)
     df = pd.DataFrame(
         rows,
         columns=[
@@ -831,7 +853,7 @@ def offering_manage_page(conn):
         df[["ID", "课程", "教师", "学期", "已选", "上限", "状态"]],
         use_container_width=True,
     )
-    courses = course_list(get_connection())
+    courses = course_list(conn)
     clmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in courses}
     olmap = {f"#{r[0]} {r[1]}-{r[2]} ({r[3]})": r[0] for r in rows}
 
@@ -853,32 +875,53 @@ def offering_manage_page(conn):
         sem = st.selectbox("学期", _sem_options(), key="oa_sem")
         max_s = st.number_input("上限", min_value=1, value=30, key="oa_max")
         st.caption("选课开始")
-        c1, c2 = st.columns([3, 1])
+        c1, c2, c3 = st.columns([3, 1, 1])
         start_date = c1.date_input(
             "日期", key="oa_start_date", label_visibility="collapsed"
         )
-        start_time = c2.text_input(
-            "时间", value="00:00", key="oa_start_time", label_visibility="collapsed"
+        start_hour = c2.selectbox(
+            "时", options=range(24), index=0,
+            key="oa_start_hour", label_visibility="collapsed",
+        )
+        start_min = c3.selectbox(
+            "分", options=range(60), index=0,
+            key="oa_start_min", label_visibility="collapsed",
         )
         st.caption("选课截止")
-        c1, c2 = st.columns([3, 1])
+        c1, c2, c3 = st.columns([3, 1, 1])
         end_date = c1.date_input(
             "日期", key="oa_end_date", label_visibility="collapsed"
         )
-        end_time = c2.text_input(
-            "时间", value="23:59", key="oa_end_time", label_visibility="collapsed"
+        end_hour = c2.selectbox(
+            "时", options=range(24), index=23,
+            key="oa_end_hour", label_visibility="collapsed",
+        )
+        end_min = c3.selectbox(
+            "分", options=range(60), index=59,
+            key="oa_end_min", label_visibility="collapsed",
         )
         st.caption("成绩截止")
-        c1, c2 = st.columns([3, 1])
+        c1, c2, c3 = st.columns([3, 1, 1])
         dl_date = c1.date_input(
             "日期", key="oa_deadline_date", label_visibility="collapsed"
         )
-        dl_time = c2.text_input(
-            "时间", value="23:59", key="oa_deadline_time", label_visibility="collapsed"
+        dl_hour = c2.selectbox(
+            "时", options=range(24), index=23,
+            key="oa_dl_hour", label_visibility="collapsed",
+        )
+        dl_min = c3.selectbox(
+            "分", options=range(60), index=59,
+            key="oa_dl_min", label_visibility="collapsed",
         )
         if st.button("新增排课", key="btn_oa"):
             if not teachers:
                 st.error("该课程暂无能上的教师，请重新选择课程")
+            elif not _check_times(
+                start_date, start_hour, start_min,
+                end_date, end_hour, end_min,
+                dl_date, dl_hour, dl_min,
+            ):
+                pass
             else:
                 try:
                     with conn.cursor() as cur:
@@ -892,24 +935,18 @@ def offering_manage_page(conn):
                                 tlmap[tid],
                                 sem,
                                 max_s,
-                                f"{start_date} {start_time}:00",
-                                f"{end_date} {end_time}:00",
-                                f"{dl_date} {dl_time}:00",
+                                f"{start_date} {start_hour:02d}:{start_min:02d}:00",
+                                f"{end_date} {end_hour:02d}:{end_min:02d}:00",
+                                f"{dl_date} {dl_hour:02d}:{dl_min:02d}:00",
                             ],
                         )
                     conn.commit()
                     st.session_state.msg = ("success", "新增成功")
                     for k in [
-                        "oa_course",
-                        "oa_teacher",
-                        "oa_sem",
-                        "oa_max",
-                        "oa_start_date",
-                        "oa_start_time",
-                        "oa_end_date",
-                        "oa_end_time",
-                        "oa_deadline_date",
-                        "oa_deadline_time",
+                        "oa_course", "oa_teacher", "oa_sem", "oa_max",
+                        "oa_start_date", "oa_start_hour", "oa_start_min",
+                        "oa_end_date", "oa_end_hour", "oa_end_min",
+                        "oa_deadline_date", "oa_dl_hour", "oa_dl_min",
                     ]:
                         st.session_state.pop(k, None)
                     st.rerun()
@@ -943,70 +980,84 @@ def offering_manage_page(conn):
                 s_d, s_t = str(row[2])[:10], str(row[2])[11:16]
                 e_d, e_t = str(row[3])[:10], str(row[3])[11:16]
                 d_d, d_t = str(row[4])[:10], str(row[4])[11:16]
+                s_h, s_m = s_t.split(":")
+                e_h, e_m = e_t.split(":")
+                d_h, d_m = d_t.split(":")
                 st.caption("选课开始")
-                c1, c2 = st.columns([3, 1])
+                c1, c2, c3 = st.columns([3, 1, 1])
                 new_sd = c1.date_input(
                     "日期",
                     value=datetime.strptime(s_d, "%Y-%m-%d").date(),
                     key=f"oe_start_date_{oid}",
                     label_visibility="collapsed",
                 )
-                new_st = c2.text_input(
-                    "时间",
-                    value=s_t,
-                    key=f"oe_start_time_{oid}",
-                    label_visibility="collapsed",
+                new_sh = c2.selectbox(
+                    "时", options=range(24), index=int(s_h),
+                    key=f"oe_start_hour_{oid}", label_visibility="collapsed",
+                )
+                new_sm = c3.selectbox(
+                    "分", options=range(60), index=int(s_m),
+                    key=f"oe_start_min_{oid}", label_visibility="collapsed",
                 )
                 st.caption("选课截止")
-                c1, c2 = st.columns([3, 1])
+                c1, c2, c3 = st.columns([3, 1, 1])
                 new_ed = c1.date_input(
                     "日期",
                     value=datetime.strptime(e_d, "%Y-%m-%d").date(),
                     key=f"oe_end_date_{oid}",
                     label_visibility="collapsed",
                 )
-                new_et = c2.text_input(
-                    "时间",
-                    value=e_t,
-                    key=f"oe_end_time_{oid}",
-                    label_visibility="collapsed",
+                new_eh = c2.selectbox(
+                    "时", options=range(24), index=int(e_h),
+                    key=f"oe_end_hour_{oid}", label_visibility="collapsed",
+                )
+                new_em = c3.selectbox(
+                    "分", options=range(60), index=int(e_m),
+                    key=f"oe_end_min_{oid}", label_visibility="collapsed",
                 )
                 st.caption("成绩截止")
-                c1, c2 = st.columns([3, 1])
+                c1, c2, c3 = st.columns([3, 1, 1])
                 new_dd = c1.date_input(
                     "日期",
                     value=datetime.strptime(d_d, "%Y-%m-%d").date(),
                     key=f"oe_deadline_date_{oid}",
                     label_visibility="collapsed",
                 )
-                new_dt = c2.text_input(
-                    "时间",
-                    value=d_t,
-                    key=f"oe_deadline_time_{oid}",
-                    label_visibility="collapsed",
+                new_dh = c2.selectbox(
+                    "时", options=range(24), index=int(d_h),
+                    key=f"oe_dl_hour_{oid}", label_visibility="collapsed",
+                )
+                new_dm = c3.selectbox(
+                    "分", options=range(60), index=int(d_m),
+                    key=f"oe_dl_min_{oid}", label_visibility="collapsed",
                 )
                 if st.button("保存修改", key=f"save_offering_{oid}"):
-                    try:
-                        with conn.cursor() as cur:
-                            cur.execute(
-                                """UPDATE course_offering
-                                SET semester=%s,max_students=%s,enroll_start_time=%s,
-                                enroll_end_time=%s,grade_deadline=%s WHERE id=%s""",
-                                [
-                                    new_sem,
-                                    new_max,
-                                    f"{new_sd} {new_st}:00",
-                                    f"{new_ed} {new_et}:00",
-                                    f"{new_dd} {new_dt}:00",
-                                    oid,
-                                ],
-                            )
-                        conn.commit()
-                        st.session_state.msg = ("success", "修改成功")
-                        st.rerun()
-                    except pymysql.Error as e:
-                        conn.rollback()
-                        st.error(f"修改失败：{e}")
+                    if _check_times(
+                        new_sd, new_sh, new_sm,
+                        new_ed, new_eh, new_em,
+                        new_dd, new_dh, new_dm,
+                    ):
+                        try:
+                            with conn.cursor() as cur:
+                                cur.execute(
+                                    """UPDATE course_offering
+                                    SET semester=%s,max_students=%s,enroll_start_time=%s,
+                                    enroll_end_time=%s,grade_deadline=%s WHERE id=%s""",
+                                    [
+                                        new_sem,
+                                        new_max,
+                                        f"{new_sd} {new_sh:02d}:{new_sm:02d}:00",
+                                        f"{new_ed} {new_eh:02d}:{new_em:02d}:00",
+                                        f"{new_dd} {new_dh:02d}:{new_dm:02d}:00",
+                                        oid,
+                                    ],
+                                )
+                            conn.commit()
+                            st.session_state.msg = ("success", "修改成功")
+                            st.rerun()
+                        except pymysql.Error as e:
+                            conn.rollback()
+                            st.error(f"修改失败：{e}")
 
     elif mode == "删除":
         sel = st.selectbox("选择要删除的排课", list(olmap.keys()), key="o_del")
