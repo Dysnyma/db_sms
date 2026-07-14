@@ -98,12 +98,14 @@ def _login_page():
                     break
     _labels, _vals = zip(*_test_accounts)
 
-    col1, col2 = st.columns([3, 2])
+    col1, col2, col3 = st.columns([3, 2, 1])
     with col1:
-        user_input = st.text_input("请输入学号/工号", max_chars=20, key="login_input")
+        user_input = st.text_input("账号", max_chars=20, key="login_input", placeholder="请输入学号/工号")
     with col2:
-        st.selectbox("快速选择", _labels, key="quick_select", on_change=_on_quick_select, label_visibility="collapsed")
-    if st.button("登录"):
+        st.selectbox("快速选择", _labels, key="quick_select", on_change=_on_quick_select)
+    with col3:
+        login_clicked = st.button("登录", type="primary", use_container_width=True)
+    if login_clicked:
         # 格式校验
         err = _validate_login_input(user_input)
         if err:
