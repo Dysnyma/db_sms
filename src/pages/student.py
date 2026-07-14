@@ -3,6 +3,7 @@
 import os
 import sys
 import pandas as pd
+import plotly.express as px
 import pymysql
 import streamlit as st
 
@@ -48,6 +49,25 @@ def my_grades_page(conn, sid, sname):
     col1, col2 = st.columns(2)
     col1.metric("学籍分", ws)
     col2.metric("绩点分", gpa)
+
+    # 各科成绩柱状图
+    st.divider()
+    df_chart = df.dropna(subset=["成绩"]).copy()
+    if not df_chart.empty:
+        df_chart["颜色"] = df_chart["成绩"].apply(
+            lambda x: "优秀" if x >= 90 else "良好" if x >= 80 else "中等" if x >= 70 else "及格" if x >= 60 else "不及格"
+        )
+        fig = px.bar(df_chart, x="课程", y="成绩", title="各科成绩一览",
+                     text_auto=".1f", hover_data={"学期": True, "教师": True},
+                     color="颜色",
+                     color_discrete_map={
+                         "优秀": "#4CAF50", "良好": "#8BC34A",
+                         "中等": "#FFC707", "及格": "#FF9800", "不及格": "#f44336",
+                     })
+        fig.add_hline(y=60, line_dash="dash", line_color="red", annotation_text="及格线")
+        fig.update_traces(textposition="outside")
+        fig.update_layout(showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
 
 
 def semester_avg_page(conn, sno):
