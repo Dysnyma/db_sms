@@ -104,5 +104,57 @@ def my_students_page(conn, tno):
     if not students:
         st.info("暂无学生选课")
         return
+
+    graded = [(s[0], s[1], float(s[2])) for s in students if s[2] is not None]
+    ungraded = [s for s in students if s[2] is None]
+
     df = pd.DataFrame(students, columns=["学号", "姓名", "成绩"])
     st.dataframe(df, use_container_width=True)
+
+    if ungraded:
+        st.warning(f"⚠️ 还有 **{len(ungraded)}** 名学生未录入成绩：{', '.join(f'{s[1]}({s[0]})' for s in ungraded)}")
+
+    if graded:
+        st.divider()
+
+        buckets = {"优秀 ≥90": 0, "良好 80~89": 0, "中等 70~79": 0, "及格 60~69": 0, "不及格 <60": 0}
+        for _, _, sc in graded:
+            if sc >= 90:
+                buckets["优秀 ≥90"] += 1
+            elif sc >= 80:
+                buckets["良好 80~89"] += 1
+            elif sc >= 70:
+                buckets["中等 70~79"] += 1
+            elif sc >= 60:
+                buckets["及格 60~69"] += 1
+            else:
+                buckets["不及格 <60"] += 1
+        df_pie = pd.DataFrame(list(buckets.items()), columns=["等级", "人数"])
+        fig = px.pie(df_pie, values="人数", names="等级", title="成绩分布",
+                     color="等级",
+                     color_discrete_map={
+                         "优秀 ≥90": "#4CAF50", "良好 80~89": "#8BC34A",
+                         "中等 70~79": "#FFC107", "及格 60~69": "#FF9800",
+                         "不及格 <60": "#f44336",
+                     })
+        fig.update_traces(textinfo="label+percent")
+        st.plotly_chart(fig, use_container_width=True)
+
+        df_rank = pd.DataFrame(graded, columns=["学号", "姓名", "成绩"])
+        df_rank = df_rank.sort_values("成绩", ascending=False).reset_index(drop=True)
+        df_rank["序号"] = range(1, len(df_rank) + 1)
+        fig = px.bar(df_rank, x="序号", y="成绩", title="成绩排行",
+                     hover_data={"姓名": True, "学号": True, "成绩": ":.1f"},
+                     text="成绩", text_auto=".1f",
+                     color="成绩", color_continuous_scale=["#f44336", "#FFC107", "#8BC34A", "#4CAF50"],
+                     range_color=[0, 100])
+        fig.update_traces(textposition="outside")
+        fig.update_layout(xaxis_title="名次", showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+
+        scores_list = [sc for _, _, sc in graded]
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("平均分", f"{sum(scores_list) / len(scores_list):.1f}")
+        c2.metric("最高分", f"{max(scores_list):.1f}")
+        c3.metric("最低分", f"{min(scores_list):.1f}")
+        c4.metric("已录入", f"{len(graded)}/{len(students)}")
