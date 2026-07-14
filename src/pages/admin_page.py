@@ -1074,9 +1074,9 @@ def offering_manage_page(conn):
         max_s = st.text_input("上限", value="30", key="oa_max", max_chars=5, placeholder="上限 1~99999", help="选课人数上限，1~99999")
         from datetime import timedelta
         _now = datetime.now().replace(second=0, microsecond=0)
-        start_dt = st.datetime_input("选课开始", value=_now, format="YYYY/MM/DD HH:mm", step=600, key="oa_start")
-        end_dt = st.datetime_input("选课截止", value=_now + timedelta(days=60), format="YYYY/MM/DD HH:mm", step=600, key="oa_end")
-        deadline_dt = st.datetime_input("成绩截止", value=_now + timedelta(days=180), format="YYYY/MM/DD HH:mm", step=600, key="oa_deadline")
+        start_dt = st.datetime_input("选课开始", value=_now, format="YYYY/MM/DD", step=600, key="oa_start")
+        end_dt = st.datetime_input("选课截止", value=_now + timedelta(days=60), format="YYYY/MM/DD", step=600, key="oa_end")
+        deadline_dt = st.datetime_input("成绩截止", value=_now + timedelta(days=180), format="YYYY/MM/DD", step=600, key="oa_deadline")
         if st.button("新增排课", key="btn_oa"):
             if not teachers:
                 st.error("该课程暂无能上的教师，请重新选择课程")
@@ -1145,9 +1145,9 @@ def offering_manage_page(conn):
                     "学期", sem_opts, index=sem_opts.index(cur_sem), key=f"oe_sem_{oid}"
                 )
                 new_max = st.text_input("上限", value=str(row[1]), key=f"oe_max_{oid}", max_chars=5, placeholder="上限 1~99999", help="选课人数上限，1~99999")
-                new_start = st.datetime_input("选课开始", value=row[2], format="YYYY/MM/DD HH:mm", step=600, key=f"oe_start_{oid}")
-                new_end = st.datetime_input("选课截止", value=row[3], format="YYYY/MM/DD HH:mm", step=600, key=f"oe_end_{oid}")
-                new_deadline = st.datetime_input("成绩截止", value=row[4], format="YYYY/MM/DD HH:mm", step=600, key=f"oe_deadline_{oid}")
+                new_start = st.datetime_input("选课开始", value=row[2], format="YYYY/MM/DD", step=600, key=f"oe_start_{oid}")
+                new_end = st.datetime_input("选课截止", value=row[3], format="YYYY/MM/DD", step=600, key=f"oe_end_{oid}")
+                new_deadline = st.datetime_input("成绩截止", value=row[4], format="YYYY/MM/DD", step=600, key=f"oe_deadline_{oid}")
                 if st.button("保存修改", key=f"save_offering_{oid}"):
                     try:
                         new_max_val = int(new_max)
