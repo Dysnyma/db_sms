@@ -4,6 +4,7 @@ import csv
 import os
 import sys
 import pandas as pd
+import plotly.express as px
 import pymysql
 import streamlit as st
 
