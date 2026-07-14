@@ -1,5 +1,6 @@
 """中文表格组件（基于 st-aggrid），全功能配置"""
 
+import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder, DataReturnMode, GridUpdateMode
 
 _LOCALE_TEXT = {
@@ -20,7 +21,6 @@ _LOCALE_TEXT = {
     "autoSizeThisColumn": "自适应列宽",
     "autoSizeAllColumns": "自适应所有列",
     "resetColumns": "重置列",
-    "tooltip": "提示",
     # 复制 / 粘贴
     "copy": "复制",
     "copyWithHeaders": "含表头复制",
@@ -28,12 +28,11 @@ _LOCALE_TEXT = {
     "ctrlC": "Ctrl+C",
     "ctrlX": "Ctrl+X",
     "paste": "粘贴",
+    "copyToClipboard": "复制到剪贴板",
     # 导出
     "export": "导出",
     "csvExport": "导出 CSV",
     "excelExport": "导出 Excel",
-    # 剪切板
-    "copyToClipboard": "复制到剪贴板",
     # 右键菜单
     "addRow": "添加行",
     "deleteRow": "删除行",
@@ -49,20 +48,17 @@ _LOCALE_TEXT = {
     "last": "末页",
     "totalRows": "总行数：",
     "pageSize": "每页行数：",
-    # 统计
-    "avg": "平均",
+    # 统计（状态栏 + 分组汇总）
+    "avg": "平均值",
     "min": "最小值",
     "max": "最大值",
     "sum": "总和",
     "count": "计数",
     "group": "分组",
     "agg": "聚合",
-    # 分组
-    "rowGroupColumns": "拖入此处进行分组…",
-    "rowGroupColumnsEmptyMessage": "拖拽列头到此处按该列分组",
-    "valueColumns": "值列",
-    "pivotMode": "透视模式",
-    "pivotColumnGroupTotals": "合计",
+    "totalAndFilteredRows": "行数",
+    "moreRows": "更多行",
+    "selectedRows": "已选行",
     # 筛选条件
     "blank": "空白",
     "notBlank": "非空白",
@@ -86,10 +82,17 @@ _LOCALE_TEXT = {
     "filterOoo": "筛选…",
     "loadingOoo": "加载中…",
     "noRowsToShow": "暂无数据",
-    # 列设置
+    # 列设置面板
     "pinnedColumns": "固定列：",
     "valueAggregation": "值聚合",
     "rowGroup": "行分组",
+    "dropRowGroupHere": "拖入此处进行按列分组",
+    # 分组面板
+    "rowGroupColumns": "拖入此处进行分组…",
+    "rowGroupColumnsEmptyMessage": "拖拽列头到此处按该列分组",
+    "valueColumns": "值列",
+    "pivotMode": "透视模式",
+    "pivotColumnGroupTotals": "合计",
 }
 
 
@@ -104,13 +107,13 @@ def st_ag(df, **kwargs):
     use_container_width : bool
         是否撑满容器宽度（默认 True）
     height : int
-        表格高度（默认 400）
+        表格高度（默认 400，None 为自动）
     pagination : bool
         是否启用分页（默认 True）
     page_size : int
         每页行数（默认 25）
     selection : str | None
-        行模式："single" | "multiple" | None（默认 None，不启用勾选）
+        行模式："single" | "multiple"（默认 None 不启用勾选）
     groupable : bool
         是否允许拖拽分组（默认 False）
     """
@@ -120,6 +123,11 @@ def st_ag(df, **kwargs):
     page_size = kwargs.pop("page_size", 25)
     selection = kwargs.pop("selection", None)
     groupable = kwargs.pop("groupable", False)
+
+    # ── 统一数值类型，避免 [object Object] ──
+    for col in df.columns:
+        if pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
     gb = GridOptionsBuilder.from_dataframe(df)
 
@@ -131,16 +139,17 @@ def st_ag(df, **kwargs):
         groupable=groupable,
         editable=False,
         filter="agTextColumnFilter",
-        menuTabs=["generalMenuTab", "filterMenuTab", "columnsMenuTab"],
+        menuTabs=["generalMenuTab", "filterMenuTab"],
     )
 
-    # ── 自动识别数字列和日期列 ──
+    # ── 数值列特殊配置（避免 [object Object]） ──
     for col in df.columns:
-        dtype = df[col].dtype
-        if dtype in ("int64", "float64"):
-            gb.configure_column(col, filter="agNumberColumnFilter")
-        elif dtype in ("datetime64[ns]",):
-            gb.configure_column(col, filter="agDateColumnFilter")
+        if pd.api.types.is_numeric_dtype(df[col]):
+            gb.configure_column(
+                col,
+                type=["numericColumn"],
+                filter="agNumberColumnFilter",
+            )
 
     # ── 分页 ──
     if pagination:
@@ -155,8 +164,34 @@ def st_ag(df, **kwargs):
             pre_selected_rows=[],
         )
 
-    # ── 侧边栏（筛选 + 列管理） ──
+    # ── 侧边栏（筛选面板 + 列管理） ──
     gb.configure_side_bar(filters_panel=True, columns_panel=True)
+
+    # ── 底部状态栏（统计：平均值、最小值、最大值、总和、计数） ──
+    gb.configure_grid_options(
+        enableStatusBar=True,
+        statusBar={
+            "statusPanels": [
+                {
+                    "statusPanel": "agTotalAndFilteredRowCountComponent",
+                    "key": "totalRowCountPanel",
+                    "label": "行数：",
+                },
+                {
+                    "statusPanel": "agSelectedRowCountComponent",
+                    "key": "selectedRowCountPanel",
+                    "label": "已选：",
+                },
+                {
+                    "statusPanel": "agAggregationComponent",
+                    "key": "aggregationPanel",
+                    "statusPanelParams": {
+                        "aggFuncs": ["count", "min", "max", "avg", "sum"],
+                    },
+                },
+            ],
+        },
+    )
 
     # ── 全局选项 ──
     gb.configure_grid_options(
@@ -167,10 +202,13 @@ def st_ag(df, **kwargs):
         clipboardDelimiter="\t",
         rowHeight=35,
         headerHeight=38,
+        suppressMovableColumns=False,
+        animateRows=False,
     )
 
     grid_options = gb.build()
 
+    # ── 渲染 ──
     return AgGrid(
         df,
         gridOptions=grid_options,
