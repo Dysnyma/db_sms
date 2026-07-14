@@ -13,6 +13,7 @@ if _src not in sys.path:
     sys.path.insert(0, _src)
 
 from teacher_tui import teacher_offerings, offering_students
+from core.grid import st_ag
 
 
 def grade_input_page(conn, tno):
@@ -32,7 +33,7 @@ def grade_input_page(conn, tno):
         st.info("暂无学生选课")
         return
     df = pd.DataFrame(students, columns=["学号", "姓名", "成绩"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
     col1, col2, col3 = st.columns(3)
     sno = col1.text_input("学生学号")
@@ -96,4 +97,4 @@ def my_students_page(conn, tno):
         st.info("暂无学生选课")
         return
     df = pd.DataFrame(students, columns=["学号", "姓名", "成绩"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)

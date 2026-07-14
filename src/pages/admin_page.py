@@ -22,6 +22,7 @@ from admin import (
     teacher_course_teachers,
 )
 from core.config import get_connection
+from core.grid import st_ag
 from core.models import (
     ClassCreate,
     ClassUpdate,
@@ -67,7 +68,7 @@ def roster_page(conn):
         st.info("该班级暂无学生")
         return
     df = pd.DataFrame(rows, columns=["学号", "姓名", "学籍分", "绩点分"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
 
 def class_report_page(conn):
@@ -106,7 +107,7 @@ def class_grade_roster_page(conn):
         st.info("该班级暂无成绩")
         return
     df = pd.DataFrame(rows, columns=["姓名", "学号", "课程", "教师", "学期", "成绩"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
 
 def teacher_info_page(conn):
@@ -146,7 +147,7 @@ def teacher_list_page(conn):
     df = pd.DataFrame(
         rows, columns=["工号", "姓名", "职称", "排课数", "选课学生", "已录入"]
     )
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
 
 def backup_page(_conn):
@@ -302,7 +303,7 @@ def class_manage_page(conn):
 
     rows = class_list(get_connection())
     df = pd.DataFrame(rows, columns=["ID", "班级名", "年级", "专业", "状态"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
     label_map = {f"{r[1]} ({r[2]}级 {r[3]})": r[0] for r in rows}
     labels = list(label_map.keys())
@@ -422,7 +423,7 @@ def course_manage_page(conn):
         st.success(m)
     rows = course_list(get_connection())
     df = pd.DataFrame(rows, columns=["ID", "课程名", "学分", "状态"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
     lmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in rows}
     imap = {r[0]: (r[1], r[2]) for r in rows}
     labels = list(lmap.keys())
@@ -552,7 +553,7 @@ def enrollment_manage_page(conn):
     df = pd.DataFrame(
         rows, columns=["选课ID", "学生", "学号", "课程", "教师", "学期", "成绩"]
     )
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
     emap = {f"#{r[0]} {r[1]} → {r[3]} ({r[5]})": r[0] for r in rows}
     sel = st.selectbox("选择要退选的记录", list(emap.keys()))
@@ -575,7 +576,7 @@ def teacher_manage_page(conn):
         st.success(m)
     rows = teacher_full_list(get_connection())
     df = pd.DataFrame(rows, columns=["ID", "姓名", "工号", "职称", "电话", "状态"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
     lmap = {f"{r[1]} ({r[2]})": r[0] for r in rows}
     imap = {r[0]: (r[1], r[2], r[3], r[4]) for r in rows}
@@ -695,7 +696,7 @@ def student_manage_page(conn):
         st.success(m)
     rows = student_full_list(get_connection())
     df = pd.DataFrame(rows, columns=["ID", "姓名", "学号", "班级ID", "班级", "状态"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
     classes = class_list(get_connection())
     clmap = {f"{r[1]} ({r[2]}级 {r[3]})": r[0] for r in classes}  # 班级标签→ID
     slmap = {f"{r[1]} ({r[2]})": r[0] for r in rows}  # 学生标签→ID
@@ -827,10 +828,7 @@ def offering_manage_page(conn):
             "teacher_id",
         ],
     )
-    st.dataframe(
-        df[["ID", "课程", "教师", "学期", "已选", "上限", "状态"]],
-        use_container_width=True,
-    )
+    st_ag(df[["ID", "课程", "教师", "学期", "已选", "上限", "状态"]])
     courses = course_list(get_connection())
     clmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in courses}
     olmap = {f"#{r[0]} {r[1]}-{r[2]} ({r[3]})": r[0] for r in rows}

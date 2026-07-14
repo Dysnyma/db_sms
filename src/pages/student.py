@@ -13,6 +13,7 @@ if _src not in sys.path:
 
 from student_tui import show_courses, my_grades, semester_avg, enrolled_courses
 from core.models import SemesterQuery, validate_or_error
+from core.grid import st_ag
 
 
 def show_courses_page(conn, sno):
@@ -34,7 +35,7 @@ def show_courses_page(conn, sno):
             "选课截止",
         ],
     )
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
 
 def my_grades_page(conn, sid, sname):
@@ -44,7 +45,7 @@ def my_grades_page(conn, sid, sname):
         st.info("暂无成绩")
         return
     df = pd.DataFrame(rows, columns=["课程", "教师", "学期", "成绩"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
     col1, col2 = st.columns(2)
     col1.metric("学籍分", ws)
     col2.metric("绩点分", gpa)
@@ -68,7 +69,7 @@ def semester_avg_page(conn, sno):
         st.info(f"{sem} 暂无成绩")
         return
     df = pd.DataFrame(rows, columns=["学号", "姓名", "学期", "课程数", "均分"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
 
 def enroll_page(conn, sno):
@@ -98,7 +99,7 @@ def enroll_page(conn, sno):
             "选课截止",
         ],
     )
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
     choices = {f"#{r[0]} {r[1]} - {r[3]} ({r[2]}学分)": r[0] for r in rows}
     plan_id = choices[st.selectbox("选择要选的排课", list(choices.keys()))]
@@ -130,7 +131,7 @@ def unenroll_page(conn, sno):
         st.info("没有已选课程")
         return
     df = pd.DataFrame(rows, columns=["排课ID", "课程名", "教师", "学期", "选课截止"])
-    st.dataframe(df, use_container_width=True)
+    st_ag(df)
 
     choices = {f"#{r[0]} {r[1]} - {r[2]}": r[0] for r in rows}
     plan_id = choices[st.selectbox("选择要退的排课", list(choices.keys()))]
