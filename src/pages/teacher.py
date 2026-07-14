@@ -113,7 +113,10 @@ def my_students_page(conn, tno):
     st.dataframe(df, use_container_width=True)
 
     if ungraded:
-        st.warning(f"⚠️ 还有 **{len(ungraded)}** 名学生未录入成绩：{', '.join(f'{s[1]}({s[0]})' for s in ungraded)}")
+        st.warning(f"⚠️ 还有 **{len(ungraded)}** 名学生未录入成绩")
+        with st.expander("查看未录入学生名单"):
+            for s in ungraded:
+                st.write(f"- {s[1]}（{s[0]}）")
 
     if graded:
         st.divider()
