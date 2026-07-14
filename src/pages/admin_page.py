@@ -22,6 +22,18 @@ from admin import (
     teacher_course_teachers,
 )
 from core.config import get_connection
+from core.models import (
+    ClassCreate,
+    ClassUpdate,
+    CourseCreate,
+    CourseUpdate,
+    TeacherCreate,
+    TeacherUpdate,
+    StudentCreate,
+    StudentUpdate,
+    TeacherQuery,
+    validate_or_error,
+)
 
 
 def _sem_options():
@@ -99,10 +111,18 @@ def class_grade_roster_page(conn):
 
 def teacher_info_page(conn):
     """教师信息查询页面"""
-    tno = st.text_input("输入教师工号")
+    tno = st.text_input(
+        "教师工号",
+        placeholder="例如：10001",
+        help="工号为 5-20 位数字",
+    )
     if not tno:
         return
-    rows = teacher_info_data(conn, tno)
+    data = validate_or_error(TeacherQuery, no=tno)
+    if data is None:
+        return
+    rows = teacher_info_data(conn, data["no"])
+
     if not rows:
         st.error("教师不存在")
         return
@@ -291,15 +311,33 @@ def class_manage_page(conn):
     mode = st.radio("操作", ["新增", "修改", "删除"], horizontal=True)
 
     if mode == "新增":
-        name = st.text_input("班级名", key="ca_name")
-        grade = st.text_input("年级", key="ca_grade")
-        major = st.text_input("专业", key="ca_major")
+        name = st.text_input(
+            "班级名",
+            placeholder="例如：软件工程 1 班",
+            help="班级名长度为 1-50 个字符",
+            key="ca_name",
+        )
+        grade = st.text_input(
+            "年级",
+            placeholder="例如：2024",
+            help="年级为 4 位年份",
+            key="ca_grade",
+        )
+        major = st.text_input(
+            "专业",
+            placeholder="例如：软件工程",
+            help="专业长度为 1-100 个字符",
+            key="ca_major",
+        )
         if st.button("新增班级", key="btn_ca"):
+            data = validate_or_error(ClassCreate, name=name, grade=grade, major=major)
+            if data is None:
+                return
             try:
                 with conn.cursor() as cur:
                     cur.execute(
                         "INSERT INTO class (name,grade,major) VALUES (%s,%s,%s)",
-                        [name, grade, major],
+                        [data["name"], data["grade"], data["major"]],
                     )
                 conn.commit()
                 st.session_state.msg = ("success", "新增成功")
@@ -315,9 +353,24 @@ def class_manage_page(conn):
         if sel:
             class_id = label_map[sel]
             name, grade, major, status = id_map[class_id]
-            new_name = st.text_input("班级名", value=name, key=f"ce_name_{class_id}")
-            new_grade = st.text_input("年级", value=grade, key=f"ce_grade_{class_id}")
-            new_major = st.text_input("专业", value=major, key=f"ce_major_{class_id}")
+            new_name = st.text_input(
+                "班级名", value=name,
+                placeholder="例如：软件工程 1 班",
+                help="班级名长度为 1-50 个字符",
+                key=f"ce_name_{class_id}",
+            )
+            new_grade = st.text_input(
+                "年级", value=grade,
+                placeholder="例如：2024",
+                help="年级为 4 位年份",
+                key=f"ce_grade_{class_id}",
+            )
+            new_major = st.text_input(
+                "专业", value=major,
+                placeholder="例如：软件工程",
+                help="专业长度为 1-100 个字符",
+                key=f"ce_major_{class_id}",
+            )
             new_status = st.selectbox(
                 "状态",
                 ["在读", "毕业"],
@@ -325,14 +378,17 @@ def class_manage_page(conn):
                 key=f"ce_status_{class_id}",
             )
             if st.button("保存修改", key=f"save_class_{class_id}"):
+                data = validate_or_error(ClassUpdate, name=new_name, grade=new_grade, major=new_major)
+                if data is None:
+                    return
                 try:
                     with conn.cursor() as cur:
                         cur.execute(
                             "UPDATE class SET name=%s,grade=%s,major=%s,status=%s WHERE id=%s",
                             [
-                                new_name,
-                                new_grade,
-                                new_major,
+                                data["name"],
+                                data["grade"],
+                                data["major"],
                                 1 if new_status == "在读" else 0,
                                 class_id,
                             ],
@@ -374,20 +430,28 @@ def course_manage_page(conn):
     mode = st.radio("操作", ["新增", "修改", "删除"], horizontal=True)
 
     if mode == "新增":
-        name = st.text_input("课程名", key="coa_name")
+        name = st.text_input(
+            "课程名",
+            placeholder="例如：数据库原理",
+            help="课程名长度为 1-100 个字符",
+            key="coa_name",
+        )
         credit = st.number_input(
             "学分", min_value=0.0, max_value=20.0, value=3.0, step=0.5, key="coa_credit"
         )
         if st.button("新增课程", key="btn_coa"):
+            data = validate_or_error(CourseCreate, name=name, credit=credit)
+            if data is None:
+                return
             with conn.cursor() as cur:
                 # 先检查该课程名是否已存在（含已删除的）
-                cur.execute("SELECT id, is_deleted FROM course WHERE name = %s", [name])
+                cur.execute("SELECT id, is_deleted FROM course WHERE name = %s", [data["name"]])
                 existing = cur.fetchone()
                 if existing:
                     if existing[1] == 1:
                         cur.execute(
                             "UPDATE course SET is_deleted=0, credit=%s, status=1 WHERE id=%s",
-                            [credit, existing[0]],
+                            [data["credit"], existing[0]],
                         )
                         conn.commit()
                         st.session_state.msg = (
@@ -400,7 +464,7 @@ def course_manage_page(conn):
                     try:
                         cur.execute(
                             "INSERT INTO course (name,credit) VALUES (%s,%s)",
-                            [name, credit],
+                            [data["name"], data["credit"]],
                         )
                         conn.commit()
                         st.session_state.msg = ("success", "新增成功")
@@ -417,7 +481,12 @@ def course_manage_page(conn):
         if sel:
             cid = lmap[sel]
             name, credit = imap[cid]
-            new_name = st.text_input("课程名", value=name, key=f"coe_name_{cid}")
+            new_name = st.text_input(
+                "课程名", value=name,
+                placeholder="例如：数据库原理",
+                help="课程名长度为 1-100 个字符",
+                key=f"coe_name_{cid}",
+            )
             new_credit = st.number_input(
                 "学分",
                 min_value=0.0,
@@ -427,12 +496,15 @@ def course_manage_page(conn):
                 key=f"coe_credit_{cid}",
             )
             if st.button("保存修改", key=f"save_course_{cid}"):
+                data = validate_or_error(CourseUpdate, name=new_name, credit=new_credit)
+                if data is None:
+                    return
                 with conn.cursor() as cur:
                     # 如果改了名称，检查新名称是否冲突
-                    if new_name != name:
+                    if data["name"] != name:
                         cur.execute(
                             "SELECT id, is_deleted FROM course WHERE name = %s AND id != %s",
-                            [new_name, cid],
+                            [data["name"], cid],
                         )
                         dup = cur.fetchone()
                         if dup:
@@ -444,7 +516,7 @@ def course_manage_page(conn):
                     try:
                         cur.execute(
                             "UPDATE course SET name=%s,credit=%s WHERE id=%s",
-                            [new_name, new_credit, cid],
+                            [data["name"], data["credit"], cid],
                         )
                         conn.commit()
                         st.session_state.msg = ("success", "修改成功")
@@ -512,16 +584,39 @@ def teacher_manage_page(conn):
     mode = st.radio("操作", ["新增", "修改", "删除"], horizontal=True)
 
     if mode == "新增":
-        name = st.text_input("姓名", key="ta_name")
-        no = st.text_input("工号", key="ta_no")
-        title = st.text_input("职称（可空）", key="ta_title")
-        phone = st.text_input("电话（可空）", key="ta_phone")
+        name = st.text_input(
+            "姓名",
+            placeholder="例如：张三",
+            help="姓名长度为 1-50 个字符",
+            key="ta_name",
+        )
+        no = st.text_input(
+            "工号",
+            placeholder="例如：10001",
+            help="工号为 5-20 位数字",
+            key="ta_no",
+        )
+        title = st.text_input(
+            "职称（可空）",
+            placeholder="例如：教授",
+            help="职称最多 20 个字符",
+            key="ta_title",
+        )
+        phone = st.text_input(
+            "电话（可空）",
+            placeholder="例如：13800138000",
+            help="电话为 7-15 位纯数字",
+            key="ta_phone",
+        )
         if st.button("新增教师", key="btn_ta"):
+            data = validate_or_error(TeacherCreate, name=name, no=no, title=title, phone=phone)
+            if data is None:
+                return
             try:
                 with conn.cursor() as cur:
                     cur.execute(
                         "INSERT INTO teacher (name,no,title,phone) VALUES (%s,%s,%s,%s)",
-                        [name, no, title or None, phone or None],
+                        [data["name"], data["no"], data.get("title"), data.get("phone")],
                     )
                 conn.commit()
                 st.session_state.msg = ("success", "新增成功")
@@ -537,16 +632,39 @@ def teacher_manage_page(conn):
         if sel:
             tid = lmap[sel]
             name, no, title, phone = imap[tid]
-            new_name = st.text_input("姓名", value=name, key=f"te_name_{tid}")
-            new_no = st.text_input("工号", value=no, key=f"te_no_{tid}")
-            new_title = st.text_input("职称", value=title or "", key=f"te_title_{tid}")
-            new_phone = st.text_input("电话", value=phone or "", key=f"te_phone_{tid}")
+            new_name = st.text_input(
+                "姓名", value=name,
+                placeholder="例如：张三",
+                help="姓名长度为 1-50 个字符",
+                key=f"te_name_{tid}",
+            )
+            new_no = st.text_input(
+                "工号", value=no,
+                placeholder="例如：10001",
+                help="工号为 5-20 位数字",
+                key=f"te_no_{tid}",
+            )
+            new_title = st.text_input(
+                "职称", value=title or "",
+                placeholder="例如：教授",
+                help="职称最多 20 个字符",
+                key=f"te_title_{tid}",
+            )
+            new_phone = st.text_input(
+                "电话", value=phone or "",
+                placeholder="例如：13800138000",
+                help="电话为 7-15 位纯数字",
+                key=f"te_phone_{tid}",
+            )
             if st.button("保存修改", key=f"save_teacher_{tid}"):
+                data = validate_or_error(TeacherUpdate, name=new_name, no=new_no, title=new_title, phone=new_phone)
+                if data is None:
+                    return
                 try:
                     with conn.cursor() as cur:
                         cur.execute(
                             "UPDATE teacher SET name=%s,no=%s,title=%s,phone=%s WHERE id=%s",
-                            [new_name, new_no, new_title or None, new_phone or None, tid],
+                            [data["name"], data["no"], data.get("title"), data.get("phone"), tid],
                         )
                     conn.commit()
                     st.session_state.msg = ("success", "修改成功")
@@ -588,36 +706,44 @@ def student_manage_page(conn):
     mode = st.radio("操作", ["新增", "修改", "删除"], horizontal=True)
 
     if mode == "新增":
-        name = st.text_input("姓名", key="sa_name")
-        no = st.text_input("学号", key="sa_no")
+        name = st.text_input(
+            "姓名",
+            placeholder="例如：张三",
+            help="姓名长度为 1-50 个字符",
+            key="sa_name",
+        )
+        no = st.text_input("学号", key="sa_no", placeholder="例如：20240001", help="学号为 8-12 位纯数字，不可包含字母或符号")
         cid = st.selectbox("班级", clabels, key="sa_class")
         if st.button("新增学生", key="btn_sa"):
+            data = validate_or_error(StudentCreate, name=name, no=no, class_id=clmap[cid])
+            if data is None:
+                return
             with conn.cursor() as cur:
                 # 先检查该学号是否已存在（含已删除的）
-                cur.execute("SELECT id, is_deleted FROM student WHERE no = %s", [no])
+                cur.execute("SELECT id, is_deleted FROM student WHERE no = %s", [data["no"]])
                 existing = cur.fetchone()
                 if existing:
                     if existing[1] == 1:
                         # 已逻辑删除 → 恢复
                         cur.execute(
                             "UPDATE student SET is_deleted=0, name=%s, class_id=%s WHERE id=%s",
-                            [name, clmap[cid], existing[0]],
+                            [data["name"], data["class_id"], existing[0]],
                         )
                         conn.commit()
                         st.session_state.msg = (
                             "success",
-                            f"学号 {no} 已恢复（之前已删除，现已还原）",
+                            f"学号 {data['no']} 已恢复（之前已删除，现已还原）",
                         )
                         for k in ["sa_name", "sa_no", "sa_class"]:
                             st.session_state.pop(k, None)
                         st.rerun()
                     else:
-                        st.error(f"学号 {no} 已存在，请使用其他学号")
+                        st.error(f"学号 {data['no']} 已存在，请使用其他学号")
                 else:
                     try:
                         cur.execute(
                             "INSERT INTO student (name,no,class_id) VALUES (%s,%s,%s)",
-                            [name, no, clmap[cid]],
+                            [data["name"], data["no"], data["class_id"]],
                         )
                         conn.commit()
                         st.session_state.msg = ("success", "新增成功")
@@ -634,17 +760,30 @@ def student_manage_page(conn):
             stid = slmap[sel]
             name, no, cur_cid = simap[stid]
             cur_clabel = [k for k, v in clmap.items() if v == cur_cid][0]
-            new_name = st.text_input("姓名", value=name, key=f"se_name_{stid}")
-            new_no = st.text_input("学号", value=no, key=f"se_no_{stid}")
+            new_name = st.text_input(
+                "姓名", value=name,
+                placeholder="例如：张三",
+                help="姓名长度为 1-50 个字符",
+                key=f"se_name_{stid}",
+            )
+            new_no = st.text_input(
+                "学号", value=no,
+                placeholder="例如：20240001",
+                help="学号为 8-12 位纯数字，不可包含字母或符号",
+                key=f"se_no_{stid}",
+            )
             new_cid = st.selectbox(
                 "班级", clabels, index=clabels.index(cur_clabel), key=f"se_class_{stid}"
             )
             if st.button("保存修改", key=f"save_student_{stid}"):
+                data = validate_or_error(StudentUpdate, name=new_name, no=new_no, class_id=clmap[new_cid])
+                if data is None:
+                    return
                 try:
                     with conn.cursor() as cur:
                         cur.execute(
                             "UPDATE student SET name=%s,no=%s,class_id=%s WHERE id=%s",
-                            [new_name, new_no, clmap[new_cid], stid],
+                            [data["name"], data["no"], data["class_id"], stid],
                         )
                     conn.commit()
                     st.session_state.msg = ("success", "修改成功")

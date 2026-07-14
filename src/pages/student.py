@@ -12,6 +12,7 @@ if _src not in sys.path:
     sys.path.insert(0, _src)
 
 from student_tui import show_courses, my_grades, semester_avg, enrolled_courses
+from core.models import SemesterQuery, validate_or_error
 
 
 def show_courses_page(conn, sno):
@@ -51,11 +52,18 @@ def my_grades_page(conn, sid, sname):
 
 def semester_avg_page(conn, sno):
     """显示学期均分查询页面"""
-    sem = st.text_input("学期 (如 2024-2025-1)")
+    sem = st.text_input(
+        "学期",
+        placeholder="例如：2024-2025-1",
+        help="格式如：2024-2025-1（开始学年-结束学年-学期）",
+    )
     if not sem:
         st.info("请输入学期")
         return
-    rows = semester_avg(conn, sno, sem=sem, paged=False)
+    data = validate_or_error(SemesterQuery, semester=sem)
+    if data is None:
+        return
+    rows = semester_avg(conn, sno, sem=data["semester"], paged=False)
     if not rows:
         st.info(f"{sem} 暂无成绩")
         return
