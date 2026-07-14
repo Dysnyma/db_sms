@@ -314,7 +314,7 @@ def class_grade_roster_page(conn):
             df_cs = pd.DataFrame([
                 (cname, len(scores), sum(scores) / len(scores),
                  sum(1 for s in scores if s >= 60) / len(scores) * 100)
-                for cname, scores in course_stats.items()
+                for cname, scores in course_stats.items() if scores
             ], columns=["课程", "人数", "平均分", "及格率"]).sort_values("平均分", ascending=False)
 
             fig = px.bar(df_cs, x="课程", y="平均分", title="各课程平均分（该班学生）",
