@@ -250,6 +250,42 @@ def class_report_page(conn):
     c4.metric("及格率", f"{pass_r}%")
     c5.metric("人数", count)
 
+    # 成绩分布柱状图
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT e.score FROM enrollment e
+        JOIN student s ON e.student_id = s.id
+        JOIN course_offering co ON e.offering_id = co.id
+        WHERE s.class_id = %s AND co.course_id = %s
+          AND e.is_deleted = 0 AND e.score IS NOT NULL""",
+        [class_id, course_id],
+    )
+    raw_scores = [r[0] for r in cur.fetchall()]
+    if raw_scores:
+        st.divider()
+        buckets = {"优秀 ≥90": 0, "良好 80~89": 0, "中等 70~79": 0, "及格 60~69": 0, "不及格 <60": 0}
+        for s in raw_scores:
+            if s >= 90:
+                buckets["优秀 ≥90"] += 1
+            elif s >= 80:
+                buckets["良好 80~89"] += 1
+            elif s >= 70:
+                buckets["中等 70~79"] += 1
+            elif s >= 60:
+                buckets["及格 60~69"] += 1
+            else:
+                buckets["不及格 <60"] += 1
+        df = pd.DataFrame(list(buckets.items()), columns=["等级", "人数"])
+        fig = px.bar(df, x="等级", y="人数", title="成绩分布", text_auto=True,
+                     color="等级",
+                     color_discrete_map={
+                         "优秀 ≥90": "#4CAF50", "良好 80~89": "#8BC34A",
+                         "中等 70~79": "#FFC107", "及格 60~69": "#FF9800",
+                         "不及格 <60": "#f44336",
+                     })
+        fig.update_layout(showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+
 
 def class_grade_roster_page(conn):
     """班级成绩明细页面"""
