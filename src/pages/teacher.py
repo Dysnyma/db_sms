@@ -72,7 +72,7 @@ def batch_grade_page(conn, tno):
         content = file.read().decode("utf-8-sig")
         reader = csv.DictReader(content.splitlines())
         ok = fail = 0
-        for row in reader:
+        for i, row in enumerate(reader, 1):
             try:
                 cur = conn.cursor()
                 cur.callproc(
@@ -85,7 +85,7 @@ def batch_grade_page(conn, tno):
                 ok += 1
             except (pymysql.Error, ValueError, KeyError, csv.Error) as e:
                 fail += 1
-                st.error(f"第{ok + fail + 1}行 {row.get('student_no', '?')}: {e}")
+                st.error(f"第{i}行 {row.get('student_no', '?')}: {e}")
         st.success(f"✅ 完成：成功 {ok} 条，失败 {fail} 条")
 
 

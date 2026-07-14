@@ -44,11 +44,43 @@ def _make_page(fn, *args):
     return wrapper
 
 
+def _validate_login_input(user_input: str) -> str | None:
+    """校验登录输入格式，返回错误信息或 None"""
+    import re
+
+    raw = user_input.strip()
+    if not raw:
+        return "请输入学号/工号"
+    if raw == "admin":
+        return None
+    if raw.startswith("T"):
+        # 教师工号
+        if not re.match(r"^T\d+$", raw):
+            return "工号格式：T 开头 + 数字，如 T20240001"
+        if len(raw) > 20:
+            return "工号长度不能超过 20 位"
+    else:
+        # 学生学号
+        if not raw.isdigit():
+            return "学号只能包含纯数字"
+        if len(raw) < 8:
+            return "学号不能少于 8 位"
+        if len(raw) > 12:
+            return "学号不能超过 12 位"
+    return None
+
+
 def _login_page():
     """登录页面：验证学号/工号，识别角色并写入 session_state"""
     st.title("学生成绩管理系统")
     user_input = st.text_input("请输入学号/工号（教务输入 admin）")
     if st.button("登录"):
+        # 格式校验
+        err = _validate_login_input(user_input)
+        if err:
+            st.error(err)
+            return
+
         conn = get_connection()
         try:
             cur = conn.cursor()
