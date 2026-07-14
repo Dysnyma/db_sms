@@ -876,7 +876,7 @@ def offering_manage_page(conn):
             tid = st.selectbox("教师", list(tlmap.keys()), key="oa_teacher")
         # 学期下拉：当前年份前后各3年
         sem = st.selectbox("学期", _sem_options(), key="oa_sem")
-        max_s = st.number_input("上限", min_value=1, max_value=99999, value=30, key="oa_max")
+        max_s = st.number_input("上限", min_value=1, value=30, key="oa_max")
         st.caption("选课开始")
         c1, c2, c3 = st.columns([3, 1, 1])
         start_date = c1.date_input(
@@ -984,7 +984,7 @@ def offering_manage_page(conn):
                     "学期", sem_opts, index=sem_opts.index(cur_sem), key=f"oe_sem_{oid}"
                 )
                 new_max = st.number_input(
-                    "上限", min_value=1, max_value=99999, value=int(row[1]), key=f"oe_max_{oid}"
+                    "上限", min_value=1, value=int(row[1]), key=f"oe_max_{oid}"
                 )
                 # 日期+时间 拆分
                 s_d, s_t = str(row[2])[:10], str(row[2])[11:16]
