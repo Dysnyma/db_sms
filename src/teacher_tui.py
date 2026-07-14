@@ -28,7 +28,7 @@ def grade_input(conn, tno):
         SELECT co.id, c.name, co.semester, co.current_students, co.max_students
         FROM course_offering co
         JOIN course c ON co.course_id = c.id
-        WHERE co.teacher_id = fn_get_teacher_id(%s) AND co.is_deleted = 0
+        WHERE co.teacher_id = fn_get_teacher_id(%s) AND co.is_deleted = 0 AND c.is_deleted = 0
         ORDER BY co.semester DESC, c.name
     """,
         [tno],
@@ -253,7 +253,7 @@ def teacher_offerings(conn, tno):
         SELECT co.id, c.name, co.semester, co.current_students, co.max_students
         FROM course_offering co
         JOIN course c ON co.course_id = c.id
-        WHERE co.teacher_id = fn_get_teacher_id(%s) AND co.is_deleted = 0
+        WHERE co.teacher_id = fn_get_teacher_id(%s) AND co.is_deleted = 0 AND c.is_deleted = 0
         ORDER BY co.semester DESC, c.name
     """,
         [tno],
