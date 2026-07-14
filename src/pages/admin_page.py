@@ -445,8 +445,9 @@ def course_manage_page(conn):
             max_chars=100,
             key="coa_name",
         )
-        credit = st.number_input(
-            "学分", min_value=0.0, max_value=20.0, value=3.0, step=0.5, key="coa_credit"
+        credit = st.text_input(
+            "学分", value="3.0", key="coa_credit", max_chars=4,
+            help="学分范围为 0.5~30.0，步长 0.5",
         )
         if st.button("新增课程", key="btn_coa"):
             data = validate_or_error(CourseCreate, name=name, credit=credit)
@@ -497,13 +498,10 @@ def course_manage_page(conn):
                 max_chars=100,
                 key=f"coe_name_{cid}",
             )
-            new_credit = st.number_input(
-                "学分",
-                min_value=0.0,
-                max_value=20.0,
-                value=float(credit) or 0.0,
-                step=0.5,
-                key=f"coe_credit_{cid}",
+            new_credit = st.text_input(
+                "学分", value=f"{float(credit):.1f}" if credit else "3.0",
+                key=f"coe_credit_{cid}", max_chars=4,
+                help="学分范围为 0.5~30.0，步长 0.5",
             )
             if st.button("保存修改", key=f"save_course_{cid}"):
                 data = validate_or_error(CourseUpdate, name=new_name, credit=new_credit)
