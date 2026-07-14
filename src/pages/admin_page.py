@@ -77,7 +77,7 @@ def summary_page(conn):
 def roster_page(conn):
     """班级学生名单页面"""
     classes = class_list(conn)
-    choices = {f"{r[1]} ({r[2]}级 {r[3]}) — {r[4]}": r[0] for r in classes}
+    choices = {r[1]: r[0] for r in classes}
     cid = choices[st.selectbox("选择班级", list(choices.keys()))]
 
     try:
@@ -97,7 +97,7 @@ def class_report_page(conn):
     col1, col2 = st.columns(2)
     classes = class_list(conn)
     courses = course_list(conn)
-    cmap = {f"{r[1]} ({r[2]}级)": r[0] for r in classes}
+    cmap = {r[1]: r[0] for r in classes}
     gmap = {f"{r[1]} ({r[2]}学分)": r[0] for r in courses}
     cid = col1.selectbox("选择班级", list(cmap.keys()))
     gid = col2.selectbox("选择课程", list(gmap.keys()))
@@ -120,7 +120,7 @@ def class_report_page(conn):
 def class_grade_roster_page(conn):
     """班级成绩明细页面"""
     classes = class_list(conn)
-    cmap = {f"{r[1]} ({r[2]}级)": r[0] for r in classes}
+    cmap = {r[1]: r[0] for r in classes}
     cid = st.selectbox("选择班级", list(cmap.keys()))
     class_id = cmap[cid]
     rows = grade_roster_data(conn, class_id)
