@@ -52,19 +52,23 @@ def my_grades_page(conn, sid, sname):
 
 def semester_avg_page(conn, sno):
     """显示学期均分查询页面"""
-    sem = st.text_input(
-        "学期",
-        placeholder="例如：2024-2025-1",
-        help="格式如：2024-2025-1（开始学年-结束学年-学期）",
-        max_chars=11,
+    # 查询该学生有数据的学期
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT DISTINCT co.semester FROM enrollment e
+        JOIN course_offering co ON e.offering_id = co.id
+        JOIN student s ON e.student_id = s.id
+        WHERE s.no = %s AND e.is_deleted = 0
+        ORDER BY co.semester""",
+        [sno],
     )
-    if not sem:
-        st.info("请输入学期")
+    semester_opts = [r[0] for r in cur.fetchall()]
+    if not semester_opts:
+        st.info("暂无成绩数据")
         return
-    data = validate_or_error(SemesterQuery, semester=sem)
-    if data is None:
-        return
-    rows = semester_avg(conn, sno, sem=data["semester"], paged=False)
+
+    sem = st.selectbox("学期", semester_opts)
+    rows = semester_avg(conn, sno, sem=sem, paged=False)
     if not rows:
         st.info(f"{sem} 暂无成绩")
         return
