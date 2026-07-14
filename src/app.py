@@ -23,6 +23,7 @@ from pages.admin_page import (
     student_manage_page,
     offering_manage_page,
     enrollment_manage_page,
+    major_manage_page,
     backup_page,
     restore_page,
 )
@@ -183,6 +184,11 @@ else:
                     _make_page(student_manage_page),
                     title="学生管理",
                     icon="👨‍🎓",
+                ),
+                st.Page(
+                    _make_page(major_manage_page),
+                    title="专业管理",
+                    icon="📚",
                 ),
                 st.Page(
                     _make_page(offering_manage_page),

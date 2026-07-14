@@ -33,6 +33,7 @@ from core.models import (
     TeacherQuery,
     validate_or_error,
 )
+from core.majors import all_majors, add_major, delete_major
 
 
 def _sem_options():
@@ -1079,3 +1080,50 @@ def offering_manage_page(conn):
                 conn.rollback()
                 st.error(f"删除失败：{e}")
             st.rerun()
+
+
+def major_manage_page(_conn):
+    """专业管理页面：查看 / 新增 / 删除"""
+    if st.session_state.get("msg"):
+        _, m = st.session_state.pop("msg")
+        st.success(m)
+
+    majors = all_majors()
+    df = pd.DataFrame(majors, columns=["专业名称"])
+    st.dataframe(df, use_container_width=True)
+
+    col1, col2 = st.columns([3, 1])
+    new_name = col1.text_input(
+        "新增专业",
+        placeholder="例如：物联网工程",
+        help="专业名不能为空且不能重复",
+        key="ma_new",
+    )
+    if col2.button("添加", key="btn_ma"):
+        err = add_major(new_name)
+        if err:
+            st.error(err)
+        else:
+            st.session_state.msg = ("success", f"专业「{new_name}」已添加")
+            st.session_state.pop("ma_new", None)
+            st.rerun()
+
+    st.divider()
+    if majors:
+        del_sel = st.selectbox("选择要删除的专业", majors, key="ma_del")
+        if st.button("删除专业", type="primary"):
+            cur = _conn.cursor()
+            cur.execute(
+                "SELECT COUNT(*) FROM class WHERE major = %s AND is_deleted = 0",
+                [del_sel],
+            )
+            count = cur.fetchone()[0]
+            if count > 0:
+                st.error(f"还有 {count} 个班级属于「{del_sel}」，请先处理这些班级")
+            else:
+                err = delete_major(del_sel)
+                if err:
+                    st.error(err)
+                else:
+                    st.session_state.msg = ("success", f"专业「{del_sel}」已删除")
+                    st.rerun()
