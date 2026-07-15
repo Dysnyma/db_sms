@@ -616,6 +616,12 @@ def class_manage_page(conn):
         sel = st.selectbox("选择要删除的班级", labels, key="class_del_sel")
         if sel and st.button("确认删除", type="primary"):
             class_id = label_map[sel]
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM student WHERE class_id=%s AND is_deleted=0", [class_id])
+            cnt = cur.fetchone()[0]
+            if cnt > 0:
+                st.error(f"该班级还有 {cnt} 名在读学生，请先处理后再删除")
+                return
             try:
                 with conn.cursor() as cur:
                     cur.execute("UPDATE class SET is_deleted=1 WHERE id=%s", [class_id])

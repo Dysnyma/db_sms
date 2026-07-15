@@ -1237,7 +1237,7 @@ def student_full_list(conn):
         SELECT s.id, s.name, s.no, s.class_id, c.name,
                CASE s.status WHEN 1 THEN '在读' ELSE '离校' END
         FROM student s JOIN class c ON s.class_id = c.id
-        WHERE s.is_deleted = 0 ORDER BY s.no
+        WHERE s.is_deleted = 0 AND c.is_deleted = 0 ORDER BY s.no
     """)
     return cur.fetchall()
 
