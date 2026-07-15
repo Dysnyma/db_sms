@@ -84,6 +84,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================
 -- 第六步：恢复触发器（从 sql/06_触发器.sql 复制）
 -- ============================================================
+DELIMITER $$
 -- trg_enrollment_before_insert：选课前检查名额
 CREATE TRIGGER trg_enrollment_before_insert
 BEFORE INSERT ON enrollment FOR EACH ROW
@@ -95,7 +96,7 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = CONCAT('选课已满！当前 ', v_current, '/', v_max);
     END IF;
-END;
+END$$
 
 -- trg_enrollment_after_insert：选课后更新人数
 CREATE TRIGGER trg_enrollment_after_insert
@@ -103,7 +104,7 @@ AFTER INSERT ON enrollment FOR EACH ROW
 BEGIN
     UPDATE course_offering SET current_students = current_students + 1
     WHERE id = NEW.offering_id;
-END;
+END$$
 
 -- trg_enrollment_after_insert_score：选课带成绩时重算 GPA
 CREATE TRIGGER trg_enrollment_after_insert_score
@@ -123,7 +124,7 @@ BEGIN
             WHERE e.student_id = NEW.student_id AND e.score IS NOT NULL AND e.is_deleted = 0
         ) WHERE s.id = NEW.student_id;
     END IF;
-END;
+END$$
 
 -- trg_enrollment_after_update：退选后更新人数
 CREATE TRIGGER trg_enrollment_after_update
@@ -153,7 +154,9 @@ BEGIN
             WHERE e.student_id = NEW.student_id AND e.score IS NOT NULL AND e.is_deleted = 0
         ) WHERE s.id = NEW.student_id;
     END IF;
-END;
+END$$
+
+DELIMITER ;
 
 SELECT CONCAT('✅ 触发器已恢复');
 
