@@ -8,7 +8,7 @@
 -- ============================================================
 -- 第一步：扩展班级基数（学生表依赖 class_id）
 -- ============================================================
-LOAD DATA LOCAL INFILE 'test/class_big.csv'
+LOAD DATA LOCAL INFILE 'class_big.csv'
 INTO TABLE class
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
@@ -20,7 +20,7 @@ SELECT CONCAT('✅ 班级已扩展至 ', (SELECT COUNT(*) FROM class WHERE is_de
 -- ============================================================
 -- 第二步：扩展教师
 -- ============================================================
-LOAD DATA LOCAL INFILE 'test/teacher_big.csv'
+LOAD DATA LOCAL INFILE 'teacher_big.csv'
 INTO TABLE teacher
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
@@ -32,7 +32,7 @@ SELECT CONCAT('✅ 教师已扩展至 ', (SELECT COUNT(*) FROM teacher WHERE is_
 -- ============================================================
 -- 第三步：扩展学生基数
 -- ============================================================
-LOAD DATA LOCAL INFILE 'test/student_big.csv'
+LOAD DATA LOCAL INFILE 'student_big.csv'
 INTO TABLE student
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
@@ -58,7 +58,7 @@ SELECT CONCAT('✅ 触发器已删除');
 SET unique_checks = 0;
 SET FOREIGN_KEY_CHECKS = 0;
 
-LOAD DATA LOCAL INFILE 'test/enrollment_big.csv'
+LOAD DATA LOCAL INFILE 'enrollment_big.csv'
 INTO TABLE enrollment
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
