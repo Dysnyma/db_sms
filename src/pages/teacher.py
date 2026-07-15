@@ -76,19 +76,26 @@ def batch_grade_page(conn, tno):
         reader = csv.DictReader(content.splitlines())
         ok = fail = 0
         for i, row in enumerate(reader, 1):
+            err_msg = None
             try:
-                cur = conn.cursor()
-                cur.callproc(
-                    "sp_grade_input",
-                    [tno, int(row["plan_id"]), row["student_no"], float(row["score"])],
-                )
-                conn.commit()
-                cur.fetchall()
-                cur.nextset()
-                ok += 1
-            except (pymysql.Error, ValueError, KeyError, csv.Error) as e:
+                plan_id = int(row["plan_id"])
+                student_no = row["student_no"]
+                score = float(row["score"])
+            except (ValueError, KeyError):
+                err_msg = "数据格式错误，请检查 plan_id/student_no/score"
+            if err_msg is None:
+                try:
+                    cur = conn.cursor()
+                    cur.callproc("sp_grade_input", [tno, plan_id, student_no, score])
+                    conn.commit()
+                    cur.fetchall()
+                    cur.nextset()
+                    ok += 1
+                except pymysql.Error as e:
+                    err_msg = str(e)
+            if err_msg:
                 fail += 1
-                st.error(f"第{i}行 {row.get('student_no', '?')}: {e}")
+                st.error(f"第{i}行 {row.get('student_no', '?')}: {err_msg}")
         st.success(f"✅ 完成：成功 {ok} 条，失败 {fail} 条")
 
 
