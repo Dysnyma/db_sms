@@ -165,23 +165,32 @@ def main():
     # ── 6. 导入数据库 ──
     print("\n📌 第六步：导入数据库...")
     sql_path = os.path.join(TEST_DIR, "load_large_data.sql")
-    trigger_path = os.path.join(os.path.dirname(TEST_DIR), "sql", "06_触发器.sql")
+
+    # 导入前先删触发器，避免 200 万条逐条触发
+    conn_pre = get_connection()
+    cur_pre = conn_pre.cursor()
+    for t in ["trg_enrollment_before_insert", "trg_enrollment_after_insert",
+              "trg_enrollment_after_insert_score", "trg_enrollment_after_update",
+              "trg_enrollment_after_update_score"]:
+        cur_pre.execute(f"DROP TRIGGER IF EXISTS {t}")
+    conn_pre.commit()
+    conn_pre.close()
+    print("  触发器已预删除，开始导入...")
 
     # 确保 local_infile 开启
-    subprocess.run(["mysql", "-u", "root", "-e", "SET GLOBAL local_infile = 1;"],
-                   capture_output=True)
+    subprocess.run(["mysql", "-u", "root", "-e", "SET GLOBAL local_infile = 1;"])
 
-    # 主数据导入
+    # 执行导入（直接输出到控制台，不吞错误）
     r = subprocess.run(
         f"mysql -u root --local-infile=1 db_sms < \"{sql_path}\"",
-        shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace"
+        shell=True, cwd=TEST_DIR
     )
-    for line in r.stdout.split("\n"):
-        if line.strip():
-            print(f"  {line.strip()}")
+    if r.returncode != 0:
+        print(f"  ❌ 导入异常，请检查上方错误信息")
+        sys.exit(1)
+    print("  ✅ 数据导入完成")
 
-    # 单独恢复触发器（DELIMITER 不支持批量模式，用 Python 直连重建）
-    print("  重建 5 个触发器中...")
+    # 重建 5 个触发器
     conn_t = get_connection()
     cur_t = conn_t.cursor()
     cur_t.execute("DROP TRIGGER IF EXISTS trg_enrollment_before_insert")
