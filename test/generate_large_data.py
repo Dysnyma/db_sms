@@ -26,11 +26,15 @@ GIVEN = list("伟强磊军勇杰涛明超波斌峰辉刚健龙翔鹏博文飞浩
 GIVEN_F = list("芳敏静丽娟燕霞娜莹婷琳颖宁雪萌瑶倩洁蕊瑶婷美玲淑华桂英玉华秀英桂兰秀兰英")
 
 def random_name(used):
-    if len(used) >= 99999:
-        return f"用户{len(used) + 1}"  # 防溢出
+    """支持单字名和双字名，约 40 * 100 * 100 = 40 万种组合"""
     while True:
         s = random.choice(SURNAMES)
-        g = random.choice(GIVEN + GIVEN_F)
+        pool = GIVEN + GIVEN_F
+        # 70% 双字名，30% 单字名
+        if random.random() < 0.7:
+            g = random.choice(pool) + random.choice(pool)
+        else:
+            g = random.choice(pool)
         name = s + g
         if name not in used:
             used.add(name)
@@ -81,24 +85,38 @@ def main():
             status = 0 if random.random() < 0.15 else 1
             w.writerow([name, no, cid, status])
 
-    # ── 生成选课 CSV（200 万行，流式写入） ──
-    print("  生成选课数据 200 万行（流式写入）...")
+    # ── 生成选课 CSV（200 万行，流式写入，防唯一键冲突） ──
+    print("  生成选课数据 200 万行（防冲突 + 流式写入）...")
     csv_enr = os.path.join(TEST_DIR, "enrollment_big.csv")
     target = 2_000_000
-    pct_ungraded = 0.25  # 25% 未录入成绩
+    pct_ungraded = 0.25
+    max_all_id = total_students + 19000
+    used_pairs = set()
+    rows = 0
 
     with open(csv_enr, "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(["offering_id", "student_id", "score"])
 
-        for i in range(target):
+        while rows < target:
             oid = random.randint(1, max_off_id)
-            sid = random.randint(1, total_students + 19000)
-            score = "" if random.random() < pct_ungraded else f"{random.gauss(75, 15):.1f}"
-            w.writerow([oid, sid, score])
+            sid = random.randint(1, max_all_id)
+            pair = (oid, sid)
+            if pair in used_pairs:
+                continue
+            used_pairs.add(pair)
 
-            if (i + 1) % 500_000 == 0:
-                print(f"   已生成 {i + 1:,} 行...")
+            if random.random() < pct_ungraded:
+                score = "\\N"  # MySQL NULL 标准写法
+            else:
+                raw = random.gauss(75, 15)
+                raw = max(0.0, min(100.0, raw))  # 截断越界
+                score = f"{raw:.1f}"
+
+            w.writerow([oid, sid, score])
+            rows += 1
+            if rows % 500_000 == 0:
+                print(f"   已生成 {rows:,} 行...")
 
     print(f"\n✅ 文件生成完毕！")
     print(f"   学生: {csv_path}（未含已存在的 {total_students} 人）")

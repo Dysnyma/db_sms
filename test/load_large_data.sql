@@ -36,11 +36,10 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 LOAD DATA LOCAL INFILE 'test/enrollment_big.csv'
 INTO TABLE enrollment
-FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
-(offering_id, student_id, @score)
-SET score = NULLIF(@score, '');
+(offering_id, student_id, score);
 
 SELECT CONCAT('✅ 选课导入完成，共 ', (SELECT COUNT(*) FROM enrollment), ' 条');
 
