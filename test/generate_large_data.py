@@ -1,0 +1,110 @@
+"""
+200 万仿真数据生成器
+用法：
+    pip install faker          # 可选，不装也能用随机中文名
+    python test/generate_large_data.py
+
+输出：test/enrollment_big.csv
+      test/student_big.csv（扩展学生用）
+"""
+
+import csv
+import os
+import random
+import sys
+from datetime import datetime, timedelta
+
+# 添加 src 到路径
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+from core.config import get_connection
+
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ── 姓名库 ──
+SURNAMES = list("张李王赵陈刘黄周吴郑钱孙朱马胡林郭何高罗")
+GIVEN = ["伟", "强", "磊", "军", "勇", "杰", "涛", "明", "超", "波",
+         "芳", "敏", "静", "丽", "娟", "燕", "霞", "娜", "莹", "婷"]
+
+def random_name(used):
+    while True:
+        s = random.choice(SURNAMES)
+        g = random.choice(GIVEN)
+        name = s + g
+        if name not in used:
+            used.add(name)
+            return name
+
+
+def main():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    print("=" * 50)
+    print("  读取现有数据库基础数据...")
+    print("=" * 50)
+
+    # ── 读取现有数据 ──
+    cur.execute("SELECT MAX(id) FROM student")
+    max_stu_id = cur.fetchone()[0] or 0
+
+    cur.execute("SELECT MAX(CAST(no AS UNSIGNED)) FROM student")
+    max_stu_no = cur.fetchone()[0] or 20240000
+
+    cur.execute("SELECT COUNT(*) FROM class WHERE is_deleted = 0")
+    cls_cnt = cur.fetchone()[0]
+
+    cur.execute("SELECT MAX(id) FROM course_offering")
+    max_off_id = cur.fetchone()[0] or 0
+
+    cur.execute("SELECT MAX(id) FROM student")
+    total_students = cur.fetchone()[0] or 0
+
+    conn.close()
+
+    print(f"  当前学生 ID 范围: 1 ~ {total_students}")
+    print(f"  当前排课 ID 范围: 1 ~ {max_off_id}")
+    print(f"  现有班级数: {cls_cnt}")
+
+    # ── 生成扩展学生 CSV（19000 人） ──
+    print("\n  生成扩展学生数据 19000 人...")
+    used = set()
+    csv_path = os.path.join(TEST_DIR, "student_big.csv")
+    with open(csv_path, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["name", "no", "class_id", "status"])
+        for i in range(1, 19001):
+            name = random_name(used)
+            no = max_stu_no + i
+            cid = random.randint(1, cls_cnt)
+            status = 0 if random.random() < 0.15 else 1
+            w.writerow([name, no, cid, status])
+
+    # ── 生成选课 CSV（200 万行，流式写入） ──
+    print("  生成选课数据 200 万行（流式写入）...")
+    csv_enr = os.path.join(TEST_DIR, "enrollment_big.csv")
+    target = 2_000_000
+    pct_ungraded = 0.25  # 25% 未录入成绩
+
+    with open(csv_enr, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["offering_id", "student_id", "score"])
+
+        for i in range(target):
+            oid = random.randint(1, max_off_id)
+            sid = random.randint(1, total_students + 19000)
+            score = "" if random.random() < pct_ungraded else f"{random.gauss(75, 15):.1f}"
+            w.writerow([oid, sid, score])
+
+            if (i + 1) % 500_000 == 0:
+                print(f"   已生成 {i + 1:,} 行...")
+
+    print(f"\n✅ 文件生成完毕！")
+    print(f"   学生: {csv_path}（未含已存在的 {total_students} 人）")
+    print(f"   选课: {csv_enr}")
+    print(f"\n后续步骤:")
+    print(f"   1. mysql -u root db_sms < test/load_large_data.sql")
+    print(f"   2. (导入完成后 CSV 自动删除)")
+
+
+if __name__ == "__main__":
+    main()
