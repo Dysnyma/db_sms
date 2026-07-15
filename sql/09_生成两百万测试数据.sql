@@ -70,7 +70,6 @@ SELECT
 FROM (
     SELECT 1 FROM information_schema.COLUMNS a
     CROSS JOIN information_schema.COLUMNS b
-    CROSS JOIN information_schema.COLUMNS c
     LIMIT 2000000
 ) tmp;
 
