@@ -757,30 +757,44 @@ def enrollment_manage_page(conn):
     if st.session_state.get("msg"):
         _, m = st.session_state.pop("msg")
         st.success(m)
-    rows = enrollment_list(conn)
+
+    # 查询可选学期（轻量查询）
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT DISTINCT co.semester FROM course_offering co "
+        "WHERE co.is_deleted = 0 ORDER BY co.semester DESC"
+    )
+    semesters = [r[0] for r in cur.fetchall()]
+    sel_sem = st.selectbox("选择学期", semesters)
+
+    # 只查选中学期的选课
+    rows = enrollment_list(conn, sel_sem)
     if not rows:
-        st.info("暂无选课记录")
+        st.info(f"{sel_sem} 暂无选课记录")
         return
     df = pd.DataFrame(
         rows, columns=["选课ID", "学生", "学号", "课程", "教师", "学期", "成绩"]
     )
     st.dataframe(df, use_container_width=True)
 
-    # 学期筛选，减少下拉选项
-    semesters = sorted(set(r[5] for r in rows), reverse=True)
-    sel_sem = st.selectbox("选择学期", semesters, index=0)
-    filtered = [r for r in rows if r[5] == sel_sem]
-    if not filtered:
-        st.info("该学期暂无选课记录")
-        return
-    emap = {f"#{r[0]} {r[1]} → {r[3]} ({r[5]})": r[0] for r in filtered}
-    sel = st.selectbox("选择要退选的记录", list(emap.keys()))
-    if sel and st.button("强制退选", type="primary"):
+    # 退选：输入选课ID
+    eid = st.text_input("输入要退选的选课ID", key="unenroll_id", placeholder="选课ID")
+    col1, col2 = st.columns([1, 5])
+    if col1.button("强制退选", type="primary"):
+        if not eid or not eid.isdigit():
+            st.error("请输入有效的选课ID")
+            return
         try:
             with conn.cursor() as cur:
-                cur.execute("UPDATE enrollment SET is_deleted=1 WHERE id=%s", [emap[sel]])
+                cur.execute(
+                    "UPDATE enrollment SET is_deleted=1 WHERE id=%s AND is_deleted=0",
+                    [int(eid)],
+                )
+            if cur.rowcount == 0:
+                st.error("选课ID不存在或已退选")
+                return
             conn.commit()
-            st.session_state.msg = ("success", "退选成功")
+            st.session_state.msg = ("success", f"选课 #{eid} 已退选")
         except pymysql.Error as e:
             conn.rollback()
             st.error(f"退选失败：{e}")

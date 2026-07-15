@@ -1276,10 +1276,9 @@ def teacher_course_teachers(conn, course_id):
     return cur.fetchall()
 
 
-def enrollment_list(conn):
-    """返回全部选课记录"""
-    cur = conn.cursor()
-    cur.execute("""
+def enrollment_list(conn, semester=None):
+    """返回选课记录，可选按学期筛选"""
+    sql = """
         SELECT e.id, s.name, s.no, c.name, t.name, co.semester,
                IFNULL(e.score, '未录入')
         FROM enrollment e
@@ -1288,6 +1287,12 @@ def enrollment_list(conn):
         JOIN course c ON co.course_id = c.id
         JOIN teacher t ON co.teacher_id = t.id
         WHERE e.is_deleted = 0
-        ORDER BY co.semester DESC, s.no
-    """)
+    """
+    params = []
+    if semester:
+        sql += " AND co.semester = %s"
+        params.append(semester)
+    sql += " ORDER BY co.semester DESC, s.no"
+    cur = conn.cursor()
+    cur.execute(sql, params)
     return cur.fetchall()
