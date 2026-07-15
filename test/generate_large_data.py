@@ -16,19 +16,21 @@ from datetime import datetime, timedelta
 
 # 添加 src 到路径
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from core.config import get_connection
+from core.config import connect as get_connection
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── 姓名库 ──
-SURNAMES = list("张李王赵陈刘黄周吴郑钱孙朱马胡林郭何高罗")
-GIVEN = ["伟", "强", "磊", "军", "勇", "杰", "涛", "明", "超", "波",
-         "芳", "敏", "静", "丽", "娟", "燕", "霞", "娜", "莹", "婷"]
+SURNAMES = list("张李王赵陈刘黄周吴郑钱孙朱马胡林郭何高罗梁宋唐许邓冯韩曹曾彭萧蔡潘田董袁于叶蒋余杜苏魏程吕丁沈任姚卢傅钟崔")
+GIVEN = list("伟强磊军勇杰涛明超波斌峰辉刚健龙翔鹏博文飞浩亮华刚毅刚杰鑫杰铭洋健文浩宇昊然鸿涛志远泽宇昕宇梓豪俊哲睿")
+GIVEN_F = list("芳敏静丽娟燕霞娜莹婷琳颖宁雪萌瑶倩洁蕊瑶婷美玲淑华桂英玉华秀英桂兰秀兰英")
 
 def random_name(used):
+    if len(used) >= 99999:
+        return f"用户{len(used) + 1}"  # 防溢出
     while True:
         s = random.choice(SURNAMES)
-        g = random.choice(GIVEN)
+        g = random.choice(GIVEN + GIVEN_F)
         name = s + g
         if name not in used:
             used.add(name)
