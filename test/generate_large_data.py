@@ -1,22 +1,18 @@
 """
 200 万仿真数据生成器
-用法：
-    pip install faker          # 可选，不装也能用随机中文名
-    python test/generate_large_data.py
-
+用法：python test/generate_large_data.py
 输出：test/enrollment_big.csv
       test/student_big.csv（扩展学生用）
 """
 
-from core.config import connect as get_connection
 import csv
 import os
 import random
 import sys
-from datetime import datetime, timedelta
 
-# 添加 src 到路径
+# 必须先添加路径，再导入项目模块
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+from core.config import connect as get_connection
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
