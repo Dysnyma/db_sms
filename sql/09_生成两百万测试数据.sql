@@ -56,6 +56,8 @@ SELECT CONCAT('✅ 排课扩充完成，当前总数: ', (SELECT COUNT(*) FROM c
 -- ============================================================
 -- 第三步：生成 200 万选课 + 成绩
 -- ============================================================
+-- 所有排课容量调大，避免触发器拦截
+UPDATE course_offering SET max_students = 99999;
 SET @max_offering_id = (SELECT MAX(id) FROM course_offering);
 SET @max_student_id  = (SELECT MAX(id) FROM student);
 
