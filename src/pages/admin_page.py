@@ -768,8 +768,8 @@ def enrollment_manage_page(conn):
 
     # 学期筛选，减少下拉选项
     semesters = sorted(set(r[5] for r in rows), reverse=True)
-    sel_sem = st.selectbox("选择学期", ["全部"] + semesters, index=1)
-    filtered = [r for r in rows if sel_sem == "全部" or r[5] == sel_sem]
+    sel_sem = st.selectbox("选择学期", semesters, index=0)
+    filtered = [r for r in rows if r[5] == sel_sem]
     if not filtered:
         st.info("该学期暂无选课记录")
         return
