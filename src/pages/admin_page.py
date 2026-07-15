@@ -766,7 +766,14 @@ def enrollment_manage_page(conn):
     )
     st.dataframe(df, use_container_width=True)
 
-    emap = {f"#{r[0]} {r[1]} → {r[3]} ({r[5]})": r[0] for r in rows}
+    # 学期筛选，减少下拉选项
+    semesters = sorted(set(r[5] for r in rows), reverse=True)
+    sel_sem = st.selectbox("选择学期", ["全部"] + semesters, index=1)
+    filtered = [r for r in rows if sel_sem == "全部" or r[5] == sel_sem]
+    if not filtered:
+        st.info("该学期暂无选课记录")
+        return
+    emap = {f"#{r[0]} {r[1]} → {r[3]} ({r[5]})": r[0] for r in filtered}
     sel = st.selectbox("选择要退选的记录", list(emap.keys()))
     if sel and st.button("强制退选", type="primary"):
         try:
