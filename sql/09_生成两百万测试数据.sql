@@ -53,11 +53,9 @@ DROP TRIGGER IF EXISTS trg_enrollment_after_insert_score;
 DROP TRIGGER IF EXISTS trg_enrollment_after_update;
 DROP TRIGGER IF EXISTS trg_enrollment_after_update_score;
 
--- 会话级优化
+-- 会话级优化（innodb_flush 和 sync_binlog 是全局变量，临时调低）
 SET unique_checks = 0;
 SET FOREIGN_KEY_CHECKS = 0;
-SET SESSION innodb_flush_log_at_trx_commit = 0;
-SET SESSION sync_binlog = 0;
 
 INSERT IGNORE INTO enrollment (offering_id, student_id, score)
 SELECT CEIL(RAND() * @max_o), CEIL(RAND() * @max_s),
@@ -170,8 +168,6 @@ END;
 
 SET UNIQUE_CHECKS = 1;
 SET FOREIGN_KEY_CHECKS = 1;
-SET SESSION innodb_flush_log_at_trx_commit = 1;
-SET SESSION sync_binlog = 1;
 
 SELECT CONCAT('✅ 触发器已恢复');
 SELECT CONCAT('📊 最终数据: 学生 ', (SELECT COUNT(*) FROM student WHERE is_deleted = 0),
