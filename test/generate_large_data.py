@@ -8,6 +8,7 @@
       test/student_big.csv（扩展学生用）
 """
 
+from core.config import connect as get_connection
 import csv
 import os
 import random
@@ -16,7 +17,6 @@ from datetime import datetime, timedelta
 
 # 添加 src 到路径
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from core.config import connect as get_connection
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -24,6 +24,7 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 SURNAMES = list("张李王赵陈刘黄周吴郑钱孙朱马胡林郭何高罗梁宋唐许邓冯韩曹曾彭萧蔡潘田董袁于叶蒋余杜苏魏程吕丁沈任姚卢傅钟崔")
 GIVEN = list("伟强磊军勇杰涛明超波斌峰辉刚健龙翔鹏博文飞浩亮华刚毅刚杰鑫杰铭洋健文浩宇昊然鸿涛志远泽宇昕宇梓豪俊哲睿")
 GIVEN_F = list("芳敏静丽娟燕霞娜莹婷琳颖宁雪萌瑶倩洁蕊瑶婷美玲淑华桂英玉华秀英桂兰秀兰英")
+
 
 def random_name(used):
     """支持单字名和双字名，约 40 * 100 * 100 = 40 万种组合"""
@@ -71,6 +72,36 @@ def main():
     print(f"  当前排课 ID 范围: 1 ~ {max_off_id}")
     print(f"  现有班级数: {cls_cnt}")
 
+    # ── 扩排课：先在数据库插入新排课 ──
+    print("\n  扩展排课至 1000 条...")
+    conn = get_connection()
+    cur = conn.cursor()
+    from datetime import datetime, timedelta
+    semesters = ['2024-2025-1','2024-2025-2','2025-2026-1','2025-2026-2','2026-2027-1','2026-2027-2']
+    course_cnt = max_off_id  # 排课跟课程数差不多
+    # 查找现有课程和教师 ID
+    cur.execute("SELECT id FROM course WHERE is_deleted=0 ORDER BY id")
+    course_ids = [r[0] for r in cur.fetchall()]
+    cur.execute("SELECT id FROM teacher WHERE is_deleted=0 AND status=1")
+    teacher_ids = [r[0] for r in cur.fetchall()]
+    for _ in range(950):
+        cid = random.choice(course_ids)
+        tid = random.choice(teacher_ids)
+        sem = random.choice(semesters)
+        start = datetime.now() - timedelta(days=random.randint(0, 365))
+        end = start + timedelta(days=90)
+        deadline = end + timedelta(days=180)
+        cur.execute(
+            "INSERT INTO course_offering (course_id, teacher_id, semester, max_students, "
+            "enroll_start_time, enroll_end_time, grade_deadline) VALUES (%s,%s,%s,99999,%s,%s,%s)",
+            [cid, tid, sem, start, end, deadline]
+        )
+    conn.commit()
+    cur.execute("SELECT MAX(id) FROM course_offering")
+    max_off_id = cur.fetchone()[0] or 0
+    conn.close()
+    print(f"  排课后最大 ID: {max_off_id}")
+
     # ── 生成扩展学生 CSV（19000 人） ──
     print("\n  生成扩展学生数据 19000 人...")
     used = set()
@@ -85,12 +116,13 @@ def main():
             status = 0 if random.random() < 0.15 else 1
             w.writerow([name, no, cid, status])
 
-    # ── 生成选课 CSV（200 万行，流式写入，防唯一键冲突） ──
-    print("  生成选课数据 200 万行（防冲突 + 流式写入）...")
-    csv_enr = os.path.join(TEST_DIR, "enrollment_big.csv")
-    target = 2_000_000
-    pct_ungraded = 0.25
+    # ── 生成选课 CSV（流式写入，防唯一键冲突） ──
     max_all_id = total_students + 19000
+    max_pairs = max_off_id * max_all_id  # 理论最大不重复组合
+    target = min(2_000_000, max_pairs)   # 不超过理论上限
+    print(f"  选课目标: {target:,} 条（理论最大 {max_pairs:,}）")
+    csv_enr = os.path.join(TEST_DIR, "enrollment_big.csv")
+    pct_ungraded = 0.25
     used_pairs = set()
     rows = 0
 
