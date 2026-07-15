@@ -758,7 +758,7 @@ def enrollment_manage_page(conn):
         _, m = st.session_state.pop("msg")
         st.success(m)
 
-    # 查询可选学期（轻量查询）
+    # 查询可选学期
     cur = conn.cursor()
     cur.execute(
         "SELECT DISTINCT co.semester FROM course_offering co "
@@ -767,10 +767,27 @@ def enrollment_manage_page(conn):
     semesters = [r[0] for r in cur.fetchall()]
     sel_sem = st.selectbox("选择学期", semesters)
 
-    # 只查选中学期的选课
-    rows = enrollment_list(conn, sel_sem)
+    # 输入学号查选课
+    sno = st.text_input("学生学号", placeholder="输入学号查询该学生该学期的选课", key="enroll_sno")
+    if not sno:
+        st.info("请输入学号查询选课记录")
+        return
+
+    cur.execute(
+        """SELECT e.id, s.name, s.no, c.name, t.name, co.semester,
+                  IFNULL(e.score, '未录入')
+           FROM enrollment e
+           JOIN student s ON e.student_id = s.id
+           JOIN course_offering co ON e.offering_id = co.id
+           JOIN course c ON co.course_id = c.id
+           JOIN teacher t ON co.teacher_id = t.id
+           WHERE e.is_deleted = 0 AND s.no = %s AND co.semester = %s
+           ORDER BY c.name""",
+        [sno, sel_sem],
+    )
+    rows = cur.fetchall()
     if not rows:
-        st.info(f"{sel_sem} 暂无选课记录")
+        st.info(f"学号 {sno} 在 {sel_sem} 暂无选课记录")
         return
     df = pd.DataFrame(
         rows, columns=["选课ID", "学生", "学号", "课程", "教师", "学期", "成绩"]
@@ -779,8 +796,7 @@ def enrollment_manage_page(conn):
 
     # 退选：输入选课ID
     eid = st.text_input("输入要退选的选课ID", key="unenroll_id", placeholder="选课ID")
-    col1, col2 = st.columns([1, 5])
-    if col1.button("强制退选", type="primary"):
+    if st.button("强制退选", type="primary"):
         if not eid or not eid.isdigit():
             st.error("请输入有效的选课ID")
             return
