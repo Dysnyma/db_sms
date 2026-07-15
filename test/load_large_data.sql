@@ -6,7 +6,31 @@
 -- ============================================================
 
 -- ============================================================
--- 第一步：扩展学生基数
+-- 第一步：扩展班级基数（学生表依赖 class_id）
+-- ============================================================
+LOAD DATA LOCAL INFILE 'test/class_big.csv'
+INTO TABLE class
+FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(name, grade, major, status);
+
+SELECT CONCAT('✅ 班级已扩展至 ', (SELECT COUNT(*) FROM class WHERE is_deleted = 0), ' 个');
+
+-- ============================================================
+-- 第二步：扩展教师
+-- ============================================================
+LOAD DATA LOCAL INFILE 'test/teacher_big.csv'
+INTO TABLE teacher
+FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(name, no, title, phone, status);
+
+SELECT CONCAT('✅ 教师已扩展至 ', (SELECT COUNT(*) FROM teacher WHERE is_deleted = 0), ' 人');
+
+-- ============================================================
+-- 第三步：扩展学生基数
 -- ============================================================
 LOAD DATA LOCAL INFILE 'test/student_big.csv'
 INTO TABLE student
@@ -18,7 +42,7 @@ IGNORE 1 ROWS
 SELECT CONCAT('✅ 学生已扩展至 ', (SELECT COUNT(*) FROM student WHERE is_deleted = 0), ' 人');
 
 -- ============================================================
--- 第二步：删触发器（避免 200 万 × 5 次调用）
+-- 第四步：删触发器（避免 200 万 × 5 次调用）
 -- ============================================================
 DROP TRIGGER IF EXISTS trg_enrollment_before_insert;
 DROP TRIGGER IF EXISTS trg_enrollment_after_insert;
@@ -29,7 +53,7 @@ DROP TRIGGER IF EXISTS trg_enrollment_after_update_score;
 SELECT CONCAT('✅ 触发器已删除');
 
 -- ============================================================
--- 第三步：性能调优 + LOAD DATA 极速导入
+-- 第五步：性能调优 + LOAD DATA 极速导入
 -- ============================================================
 SET unique_checks = 0;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -53,7 +77,7 @@ SET co.current_students = (
 SELECT CONCAT('✅ 排课人数已同步');
 
 -- ============================================================
--- 第四步：一次性批量重算 GPA（替代触发器逐行计算）
+-- 第六步：一次性批量重算 GPA（替代触发器逐行计算）
 -- ============================================================
 UPDATE student s
 SET weighted_score = (
@@ -76,13 +100,13 @@ WHERE s.is_deleted = 0;
 SELECT CONCAT('✅ GPA 批量重算完成');
 
 -- ============================================================
--- 第五步：恢复约束
+-- 第七步：恢复约束
 -- ============================================================
 SET UNIQUE_CHECKS = 1;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
--- 第六步：恢复触发器（从 sql/06_触发器.sql 复制）
+-- 第八步：恢复触发器（从 sql/06_触发器.sql 复制）
 -- ============================================================
 DELIMITER $$
 -- trg_enrollment_before_insert：选课前检查名额
@@ -161,7 +185,7 @@ DELIMITER ;
 SELECT CONCAT('✅ 触发器已恢复');
 
 -- ============================================================
--- 第七步：清理 CSV
+-- 第九步：清理 CSV
 -- ============================================================
 SELECT CONCAT('📊 最终统计:');
 SELECT CONCAT('   学生: ', COUNT(*)) FROM student WHERE is_deleted = 0;
