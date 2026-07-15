@@ -100,16 +100,17 @@ WHERE s.is_deleted = 0;
 SELECT CONCAT('✅ GPA 批量重算完成');
 
 -- ============================================================
--- 第七步：恢复约束
+-- 第八步：恢复约束
 -- ============================================================
 SET UNIQUE_CHECKS = 1;
 SET FOREIGN_KEY_CHECKS = 1;
 
+-- 触发器由 Python 脚本自动重建
+SELECT CONCAT('✅ 导入完成，触发器由 Python 恢复');
+
 -- ============================================================
--- 第八步：恢复触发器（从 sql/06_触发器.sql 复制）
--- ============================================================
-DELIMITER $$
--- trg_enrollment_before_insert：选课前检查名额
+-- 第九步：清理 CSV
+-- ============================================================：选课前检查名额
 CREATE TRIGGER trg_enrollment_before_insert
 BEFORE INSERT ON enrollment FOR EACH ROW
 BEGIN
