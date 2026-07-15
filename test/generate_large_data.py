@@ -165,19 +165,100 @@ def main():
     # ── 6. 导入数据库 ──
     print("\n📌 第六步：导入数据库...")
     sql_path = os.path.join(TEST_DIR, "load_large_data.sql")
-    conn_str = f"mysql -u root --local-infile=1 db_sms < \"{sql_path}\""
+    trigger_path = os.path.join(os.path.dirname(TEST_DIR), "sql", "06_触发器.sql")
 
     # 确保 local_infile 开启
     subprocess.run(["mysql", "-u", "root", "-e", "SET GLOBAL local_infile = 1;"],
                    capture_output=True)
 
-    r = subprocess.run(conn_str, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    # 主数据导入
+    r = subprocess.run(
+        f"mysql -u root --local-infile=1 db_sms < \"{sql_path}\"",
+        shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
     for line in r.stdout.split("\n"):
         if line.strip():
             print(f"  {line.strip()}")
-    if r.returncode != 0:
-        err = r.stderr.strip()[:200]
-        print(f"  ⚠️ 导入警告: {err}" if err else "")
+
+    # 单独恢复触发器（DELIMITER 不支持批量模式，用 Python 直连重建）
+    print("  重建 5 个触发器中...")
+    conn_t = get_connection()
+    cur_t = conn_t.cursor()
+    cur_t.execute("DROP TRIGGER IF EXISTS trg_enrollment_before_insert")
+    cur_t.execute("DROP TRIGGER IF EXISTS trg_enrollment_after_insert")
+    cur_t.execute("DROP TRIGGER IF EXISTS trg_enrollment_after_insert_score")
+    cur_t.execute("DROP TRIGGER IF EXISTS trg_enrollment_after_update")
+    cur_t.execute("DROP TRIGGER IF EXISTS trg_enrollment_after_update_score")
+    conn_t.commit()
+
+    triggers = [
+        ("""CREATE TRIGGER trg_enrollment_before_insert
+BEFORE INSERT ON enrollment FOR EACH ROW
+BEGIN
+    DECLARE v_current INT; DECLARE v_max INT;
+    SELECT current_students, max_students INTO v_current, v_max
+    FROM course_offering WHERE id = NEW.offering_id FOR UPDATE;
+    IF v_current >= v_max THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = CONCAT('选课已满！当前 ', v_current, '/', v_max);
+    END IF;
+END"""),
+        ("""CREATE TRIGGER trg_enrollment_after_insert
+AFTER INSERT ON enrollment FOR EACH ROW
+BEGIN
+    UPDATE course_offering SET current_students = current_students + 1
+    WHERE id = NEW.offering_id;
+END"""),
+        ("""CREATE TRIGGER trg_enrollment_after_insert_score
+AFTER INSERT ON enrollment FOR EACH ROW
+BEGIN
+    IF NEW.score IS NOT NULL THEN
+        UPDATE student s SET weighted_score = (
+            SELECT ROUND(SUM(e.score * c.credit) / SUM(c.credit), 2)
+            FROM enrollment e JOIN course_offering co ON e.offering_id = co.id
+            JOIN course c ON co.course_id = c.id
+            WHERE e.student_id = NEW.student_id AND e.score IS NOT NULL AND e.is_deleted = 0
+        ), gpa = (
+            SELECT ROUND(SUM(c.credit * r.point) / SUM(c.credit), 2)
+            FROM enrollment e JOIN course_offering co ON e.offering_id = co.id
+            JOIN course c ON co.course_id = c.id
+            JOIN grade_point_rule r ON e.score BETWEEN r.min_score AND r.max_score
+            WHERE e.student_id = NEW.student_id AND e.score IS NOT NULL AND e.is_deleted = 0
+        ) WHERE s.id = NEW.student_id;
+    END IF;
+END"""),
+        ("""CREATE TRIGGER trg_enrollment_after_update
+AFTER UPDATE ON enrollment FOR EACH ROW
+BEGIN
+    IF OLD.is_deleted = 0 AND NEW.is_deleted = 1 THEN
+        UPDATE course_offering SET current_students = current_students - 1
+        WHERE id = NEW.offering_id;
+    END IF;
+END"""),
+        ("""CREATE TRIGGER trg_enrollment_after_update_score
+AFTER UPDATE ON enrollment FOR EACH ROW
+BEGIN
+    IF NOT (OLD.score <=> NEW.score) THEN
+        UPDATE student s SET weighted_score = (
+            SELECT ROUND(SUM(e.score * c.credit) / SUM(c.credit), 2)
+            FROM enrollment e JOIN course_offering co ON e.offering_id = co.id
+            JOIN course c ON co.course_id = c.id
+            WHERE e.student_id = NEW.student_id AND e.score IS NOT NULL AND e.is_deleted = 0
+        ), gpa = (
+            SELECT ROUND(SUM(c.credit * r.point) / SUM(c.credit), 2)
+            FROM enrollment e JOIN course_offering co ON e.offering_id = co.id
+            JOIN course c ON co.course_id = c.id
+            JOIN grade_point_rule r ON e.score BETWEEN r.min_score AND r.max_score
+            WHERE e.student_id = NEW.student_id AND e.score IS NOT NULL AND e.is_deleted = 0
+        ) WHERE s.id = NEW.student_id;
+    END IF;
+END"""),
+    ]
+    for t in triggers:
+        cur_t.execute(t)
+    conn_t.commit()
+    conn_t.close()
+    print(f"  5 个触发器已恢复 ✅")
 
     # ── 7. 清理 CSV ──
     print("\n📌 第七步：清理临时 CSV 文件...")
