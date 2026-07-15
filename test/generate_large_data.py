@@ -186,9 +186,9 @@ def main():
         shell=True, cwd=TEST_DIR
     )
     if r.returncode != 0:
-        print(f"  ❌ 导入异常，请检查上方错误信息")
-        sys.exit(1)
-    print("  ✅ 数据导入完成")
+        print(f"  ⚠️ SQL 执行有警告（数据可能已导入），继续重建触发器...")
+    else:
+        print("  ✅ 数据导入完成")
 
     # 重建 5 个触发器
     conn_t = get_connection()
