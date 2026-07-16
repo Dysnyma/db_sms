@@ -187,7 +187,7 @@ add_card(slide, Inches(0.5), Inches(4.0), Inches(12.3), Inches(3.0),
          ], "📊")
 
 add_text(slide, Inches(0.5), Inches(6.8), Inches(12), Inches(0.4),
-         "⚠️ 当前截图待补充：请替换为实际系统运行截图", size=11, color=C_GRAY)
+         "📌 数据量 20,000 学生 / 300 教师 / 329 班级 / 200 万选课", size=11, color=C_GRAY)
 
 
 # ════════════════════════════════════════════════════════════════
@@ -233,7 +233,7 @@ for i, (name, desc) in enumerate(techs):
              desc, size=12, color=C_GRAY, align=PP_ALIGN.CENTER)
 
 add_text(slide, Inches(0.5), Inches(6.8), Inches(12), Inches(0.4),
-         "⚠️ 待补充：系统部署架构图截图", size=11, color=C_GRAY)
+         "📌 支持命令行 (CLI) + Web (Streamlit) 双界面运行", size=11, color=C_GRAY)
 
 
 # ════════════════════════════════════════════════════════════════
@@ -557,34 +557,6 @@ add_text(slide, Inches(1), Inches(6.5), Inches(11.33), Inches(0.5),
          "谢谢老师！请各位老师批评指正 🙏", size=20, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
 
 
-# ════════════════════════════════════════════════════════════════
-# Slide 12: 待补充截图清单
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "📸  请在此处插入系统运行截图", size=28, bold=True, color=C_PRIMARY)
-
-screenshots = [
-    "登录页面（快速选择下拉）",
-    "数据概览（Plotly 饼图 + 柱状图）",
-    "班级管理（年级/专业下拉 + 自动生成班级名）",
-    "教师查看课程学生（饼图+排行并排）",
-    "学生我的成绩（各科成绩柱状图+及格线）",
-    "排课管理（datetime_input 原生组件）",
-    "班级成绩统计（分布柱状图）",
-    "选课管理（按学号+学期查询）",
-    "专业管理页面",
-    "生成器运行效果（200 万数据导入）",
-]
-for i, (ss) in enumerate(screenshots):
-    col = i % 2
-    row = i // 2
-    x = Inches(0.5 + col * 6.3)
-    y = Inches(1.1 + row * 0.65)
-    add_shape(slide, x, y, Inches(6.0), Inches(0.5), C_LIGHT)
-    add_text(slide, x + Inches(0.2), y + Inches(0.07), Inches(5.5), Inches(0.35),
-             f"{i+1:02d}. {ss}", size=12, color=C_DARK)
 
 
 # ── 保存 ──
