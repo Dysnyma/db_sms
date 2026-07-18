@@ -1,6 +1,6 @@
-"""生成答辩 PPT——数据库系统课程设计·学生成绩管理系统"""
+"""答辩 PPT —— 重点：解决问题的思路·方法·手段·成效"""
 from pptx import Presentation
-from pptx.util import Inches, Pt, Emu, Cm
+from pptx.util import Inches, Pt, Cm
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
@@ -10,557 +10,262 @@ prs = Presentation()
 prs.slide_width = Inches(13.33)
 prs.slide_height = Inches(7.5)
 
-# ── 色板 ──
-C_PRIMARY = RGBColor(0x1A, 0x52, 0x76)   # 深蓝
-C_SECONDARY = RGBColor(0x2E, 0x86, 0xC1)  # 中蓝
-C_ACCENT = RGBColor(0x4C, 0xAF, 0x50)     # 绿
-C_LIGHT = RGBColor(0xEB, 0xF5, 0xFB)      # 浅蓝底
-C_WHITE = RGBColor(0xFF, 0xFF, 0xFF)
-C_DARK = RGBColor(0x2C, 0x3E, 0x50)
-C_GRAY = RGBColor(0x7F, 0x8C, 0x8D)
+C1 = RGBColor(0x1A, 0x52, 0x76)  # 深蓝
+C2 = RGBColor(0x2E, 0x86, 0xC1)  # 中蓝
+C3 = RGBColor(0x4C, 0xAF, 0x50)  # 绿
+C4 = RGBColor(0xEB, 0xF5, 0xFB)  # 浅蓝
+C5 = RGBColor(0xFF, 0xFF, 0xFF)
+C6 = RGBColor(0x2C, 0x3E, 0x50)
+C7 = RGBColor(0x7F, 0x8C, 0x8D)
+C8 = RGBColor(0xE7, 0x4C, 0x3C)  # 红
 
-# ── 辅助函数 ──
-def add_bg(slide, color=C_PRIMARY):
-    bg = slide.background
-    fill = bg.fill
-    fill.solid()
-    fill.fore_color.rgb = color
+def bg(slide, color):
+    slide.background.fill.solid(); slide.background.fill.fore_color.rgb = color
 
-def add_shape(slide, left, top, width, height, color=C_PRIMARY):
-    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = color
-    shape.line.fill.background()
-    return shape
+def box(slide, l, t, w, h, c):
+    s = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, l, t, w, h)
+    s.fill.solid(); s.fill.fore_color.rgb = c; s.line.fill.background(); return s
 
-def add_rounded_shape(slide, left, top, width, height, color):
-    shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = color
-    shape.line.fill.background()
-    return shape
+def rbox(slide, l, t, w, h, c):
+    s = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, l, t, w, h)
+    s.fill.solid(); s.fill.fore_color.rgb = c; s.line.fill.background(); return s
 
-def _set_font(run, size=14, bold=False, color=C_DARK, font='Microsoft YaHei'):
-    run.font.size = Pt(size)
-    run.font.bold = bold
-    run.font.color.rgb = color
-    run.font.name = font
+def txt(slide, l, t, w, h, text, sz=14, bold=False, color=C6, align=PP_ALIGN.LEFT):
+    tx = slide.shapes.add_textbox(l, t, w, h)
+    tx.text_frame.word_wrap = True
+    p = tx.text_frame.paragraphs[0]; p.text = text; p.alignment = align
+    p.runs[0].font.size = Pt(sz); p.runs[0].font.bold = bold
+    p.runs[0].font.color.rgb = color; p.runs[0].font.name = 'Microsoft YaHei'
+    return tx
 
-def add_text(slide, left, top, width, height, text, size=14, bold=False, color=C_DARK, align=PP_ALIGN.LEFT, font='Microsoft YaHei'):
-    txBox = slide.shapes.add_textbox(left, top, width, height)
-    tf = txBox.text_frame
-    tf.word_wrap = True
-    p = tf.paragraphs[0]
-    p.text = text
-    p.alignment = align
-    _set_font(p.runs[0], size, bold, color, font)
-    return txBox
+def multiline(slide, l, t, w, h, lines, sz=13, color=C6):
+    tx = slide.shapes.add_textbox(l, t, w, h)
+    tx.text_frame.word_wrap = True
+    for i, (text, bd, clr) in enumerate(lines):
+        if i == 0: p = tx.text_frame.paragraphs[0]
+        else: p = tx.text_frame.add_paragraph()
+        p.text = text; p.space_after = Pt(4)
+        p.runs[0].font.size = Pt(sz); p.runs[0].font.bold = bd
+        p.runs[0].font.color.rgb = clr or color
+    return tx
 
-def add_multi_text(slide, left, top, width, height, lines, size=14, color=C_DARK, font='Microsoft YaHei', spacing=Pt(6)):
-    txBox = slide.shapes.add_textbox(left, top, width, height)
-    tf = txBox.text_frame
-    tf.word_wrap = True
-    for i, (text, bold, sz, clr) in enumerate(lines):
-        if i == 0:
-            p = tf.paragraphs[0]
-        else:
-            p = tf.add_paragraph()
-        p.text = text
-        p.alignment = PP_ALIGN.LEFT
-        p.space_after = spacing
-        run = p.runs[0]
-        _set_font(run, sz or size, bold, clr or color, font)
-    return txBox
+def slide_problem(slide, title, problem, solution_items):
+    """标准问题→解决方案布局"""
+    box(slide, Inches(0), Inches(0), Inches(0.3), Inches(7.5), C1)
+    txt(slide, Inches(0.5), Inches(0.3), Inches(8), Inches(0.5), title, sz=26, bold=True, color=C1)
 
-def add_accent_bar(slide, left, top, width=Inches(0.06), height=Inches(0.4), color=C_ACCENT):
-    return add_shape(slide, left, top, width, height, color)
+    # 问题框
+    bar = rbox(slide, Inches(0.5), Inches(1.1), Inches(12.3), Inches(1.0), RGBColor(0xFD, 0xED, 0xED))
+    txt(slide, Inches(0.7), Inches(1.15), Inches(0.8), Inches(0.4), '❓ 问题', sz=14, bold=True, color=C8)
+    txt(slide, Inches(1.5), Inches(1.2), Inches(11), Inches(0.8), problem, sz=13, color=C6)
 
-def add_card(slide, left, top, width, height, title, items, icon=""):
-    """添加卡片"""
-    card = add_rounded_shape(slide, left, top, width, height, C_WHITE)
-    # 标题行
-    add_text(slide, left + Inches(0.2), top + Inches(0.1), width - Inches(0.4), Inches(0.4),
-             f"{icon} {title}", size=16, bold=True, color=C_PRIMARY)
-    # 装饰线
-    add_shape(slide, left + Inches(0.2), top + Inches(0.45), Inches(0.6), Inches(0.04), C_SECONDARY)
-    # 内容
-    add_multi_text(slide, left + Inches(0.2), top + Inches(0.55), width - Inches(0.4), height - Inches(0.65),
-                   [(item, False, 13, C_DARK) for item in items], spacing=Pt(4))
+    # 方案
+    items_data = []
+    for label, detail in solution_items:
+        items_data.append((label, True, C2))
+        items_data.append((f'     {detail}', False, C6))
+
+    multiline(slide, Inches(0.7), Inches(2.4), Inches(11.5), Inches(4.5), items_data, sz=13)
 
 
-# ════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════
 # Slide 1: 封面
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])  # blank
-add_bg(slide, C_PRIMARY)
-# 装饰条
-add_shape(slide, Inches(0), Inches(0), Inches(13.33), Inches(0.06), C_ACCENT)
-add_shape(slide, Inches(0), Inches(7.44), Inches(13.33), Inches(0.06), C_ACCENT)
+# ════════════════════════════════════════
+slide = prs.slides.add_slide(prs.slide_layouts[6]); bg(slide, C1)
+box(slide, Inches(0), Inches(0), Inches(13.33), Inches(0.06), C3)
+txt(slide, Inches(1), Inches(2.0), Inches(11.33), Inches(1.0),
+    '数据库系统课程设计', sz=40, bold=True, color=C5, align=PP_ALIGN.CENTER)
+txt(slide, Inches(1), Inches(3.0), Inches(11.33), Inches(0.8),
+    '学生成绩管理系统', sz=32, color=RGBColor(0x85, 0xC1, 0xE9), align=PP_ALIGN.CENTER)
+box(slide, Inches(5.5), Inches(3.9), Inches(2.33), Inches(0.04), C3)
+for i, (l, v) in enumerate([('专    业', '计算机科学与技术'), ('学生姓名', '蔡坤灿'), ('指导教师', ''), ('日    期', '2026年7月')]):
+    txt(slide, Inches(4.5), Inches(4.2+i*0.5), Inches(4.33), Inches(0.45),
+        f'{l}：{v}', sz=16, color=C5, align=PP_ALIGN.CENTER)
 
-# 主标题
-add_text(slide, Inches(1), Inches(1.8), Inches(11.33), Inches(1.2),
-         "数据库系统课程设计", size=44, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
-
-# 副标题
-add_text(slide, Inches(1), Inches(2.9), Inches(11.33), Inches(0.8),
-         "学生成绩管理系统", size=36, bold=False, color=RGBColor(0x85, 0xC1, 0xE9), align=PP_ALIGN.CENTER)
-
-# 分割线
-add_shape(slide, Inches(5.5), Inches(3.8), Inches(2.33), Inches(0.04), C_ACCENT)
-
-# 信息
-info_lines = [
-    ("专    业：计算机科学与技术", 16, C_WHITE),
-    ("学    生：蔡坤灿", 16, C_WHITE),
-    ("指导教师：", 16, C_WHITE),
-    ("日    期：2026年7月", 16, C_WHITE),
-]
-for i, (txt, sz, clr) in enumerate(info_lines):
-    add_text(slide, Inches(4.7), Inches(4.1 + i * 0.5), Inches(4), Inches(0.45),
-             txt, size=sz, bold=False, color=clr, align=PP_ALIGN.CENTER)
-
-add_text(slide, Inches(1), Inches(6.5), Inches(11.33), Inches(0.5),
-         "AI辅助 | MySQL + Python + Streamlit", size=14, color=RGBColor(0x85, 0xC1, 0xE9), align=PP_ALIGN.CENTER)
-
-
-# ════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════
 # Slide 2: 目录
-# ════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════
+slide = prs.slides.add_slide(prs.slide_layouts[6]); box(slide, Inches(0), Inches(0), Inches(0.4), Inches(7.5), C1)
+txt(slide, Inches(1), Inches(0.3), Inches(4), Inches(0.6), '目  录', sz=32, bold=True, color=C1)
+items = [('01', '系统功能总览'), ('02', '技术方案'), ('03-09', '问题与解决方案（核心）'), ('10', '项目特色'), ('11', '设计总结与不足')]
+for i, (n, t) in enumerate(items):
+    y = Inches(1.5+i*1.0)
+    box(slide, Inches(1), y, Inches(0.7), Inches(0.6), C2)
+    txt(slide, Inches(1.05), y+Inches(0.08), Inches(0.6), Inches(0.45), n, sz=18, bold=True, color=C5, align=PP_ALIGN.CENTER)
+    txt(slide, Inches(2.0), y+Inches(0.1), Inches(8), Inches(0.45), t, sz=18, color=C6)
+
+# ════════════════════════════════════════
+# Slide 3: 系统功能总览
+# ════════════════════════════════════════
 slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_shape(slide, Inches(0), Inches(0), Inches(0.4), Inches(7.5), C_PRIMARY)
-add_text(slide, Inches(1), Inches(0.3), Inches(4), Inches(0.6),
-         "目  录", size=32, bold=True, color=C_PRIMARY)
-
-toc_items = [
-    ("01", "项目概述"),
-    ("02", "系统架构与技术栈"),
-    ("03", "数据库设计"),
-    ("04", "功能模块详解"),
-    ("05", "AI辅助开发记录"),
-    ("06", "总结与演示"),
-]
-for i, (num, title) in enumerate(toc_items):
-    y = Inches(1.3 + i * 0.85)
-    add_shape(slide, Inches(1), y, Inches(0.7), Inches(0.6), C_SECONDARY)
-    add_text(slide, Inches(1.05), y + Inches(0.08), Inches(0.6), Inches(0.45),
-             num, size=18, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
-    add_text(slide, Inches(2), y + Inches(0.1), Inches(6), Inches(0.45),
-             title, size=18, color=C_DARK)
-
-
-# ════════════════════════════════════════════════════════════════
-# Slide 3: 项目概述
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "01  项目概述", size=28, bold=True, color=C_PRIMARY)
-
-# 卡片布局
-add_card(slide, Inches(0.5), Inches(1.2), Inches(3.8), Inches(2.5),
-         "选题", [
-             "题目二：学生成绩管理系统",
-             "覆盖教务、教师、学生三角色",
-             "完整数据库设计6阶段流程",
-         ], "🎯")
-
-add_card(slide, Inches(4.6), Inches(1.2), Inches(3.8), Inches(2.5),
-         "技术路线", [
-             "数据库：MySQL 8.0 (InnoDB + utf8mb4)",
-             "后端：Python 3.12 + SQLAlchemy 连接池",
-             "Web 界面：Streamlit + Plotly 图表",
-         ], "⚙️")
-
-add_card(slide, Inches(8.7), Inches(1.2), Inches(4.1), Inches(2.5),
-         "双界面交付", [
-             "命令行界面 (CLI)：main.py（4角色）",
-             "Web 界面：22 个 Streamlit 页面",
-             "同一套数据库 + 业务函数",
-         ], "🖥️")
-
-# 数据规模卡片
-add_card(slide, Inches(0.5), Inches(4.0), Inches(12.3), Inches(3.0),
-         "数据规模", [
-             "学生 20,000 人 | 教师 300 人 | 班级 329 个 | 课程 18 门",
-             "排课 1,004 条 | 选课记录 2,002,688 条 | 专业 160+ 个",
-             "覆盖 20 年学期跨度（40 个学期）",
-         ], "📊")
-
-add_text(slide, Inches(0.5), Inches(6.8), Inches(12), Inches(0.4),
-         "📌 数据量 20,000 学生 / 300 教师 / 329 班级 / 200 万选课", size=11, color=C_GRAY)
-
-
-# ════════════════════════════════════════════════════════════════
-# Slide 4: 系统架构
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "02  系统架构与技术栈", size=28, bold=True, color=C_PRIMARY)
-
-# 三层架构图
-layers = [
-    (Inches(0.5), "🎨 表现层", ["Streamlit Web (22 页面)", "CLI 命令行界面"]),
-    (Inches(4.8), "🧠 业务逻辑层", ["Pydantic 输入校验", "9 个存储过程", "5 个触发器", "3 个视图"]),
-    (Inches(9.1), "🗄️ 数据层", ["MySQL 8.0 / InnoDB", "8 张表 + 连接池", "SQLAlchemy QueuePool"]),
-]
-for x, title, items in layers:
-    box = add_rounded_shape(slide, x, Inches(1.3), Inches(3.8), Inches(2.8), C_LIGHT)
-    box.shadow.inherit = False
-    add_text(slide, x + Inches(0.2), Inches(1.4), Inches(3.4), Inches(0.5),
-             title, size=16, bold=True, color=C_PRIMARY)
-    add_shape(slide, x + Inches(0.2), Inches(1.85), Inches(0.5), Inches(0.03), C_SECONDARY)
-    add_multi_text(slide, x + Inches(0.2), Inches(2.0), Inches(3.4), Inches(1.8),
-                   [(item, False, 13, C_DARK) for item in items], spacing=Pt(5))
-
-# 技术栈详情
-techs = [
-    ("Python 3.12", "编程语言"),
-    ("MySQL 8.0", "数据库"),
-    ("Streamlit", "Web 框架"),
-    ("PyMySQL + SQLAlchemy", "数据库驱动"),
-    ("Plotly", "交互式图表"),
-    ("Pydantic", "数据校验"),
-]
-for i, (name, desc) in enumerate(techs):
-    x = Inches(0.5 + i * 2.1)
-    y = Inches(4.5)
-    t = add_rounded_shape(slide, x, y, Inches(1.9), Inches(1.5), C_WHITE)
-    t.shadow.inherit = False
-    add_text(slide, x + Inches(0.1), y + Inches(0.2), Inches(1.7), Inches(0.4),
-             name, size=14, bold=True, color=C_PRIMARY, align=PP_ALIGN.CENTER)
-    add_text(slide, x + Inches(0.1), y + Inches(0.7), Inches(1.7), Inches(0.4),
-             desc, size=12, color=C_GRAY, align=PP_ALIGN.CENTER)
-
-add_text(slide, Inches(0.5), Inches(6.8), Inches(12), Inches(0.4),
-         "📌 支持命令行 (CLI) + Web (Streamlit) 双界面运行", size=11, color=C_GRAY)
-
-
-# ════════════════════════════════════════════════════════════════
-# Slide 5: 数据库设计 - 核心表
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "03  数据库设计 — 核心表", size=28, bold=True, color=C_PRIMARY)
-
-tables = [
-    ("class", "班级表", "年级、专业、状态"),
-    ("student", "学生表", "学号、班级FK、学籍分、GPA"),
-    ("course", "课程表", "课程名、学分"),
-    ("teacher", "教师表", "工号、职称、电话"),
-    ("course_offering", "排课表", "课程FK+教师FK+学期+时间+容量"),
-    ("enrollment", "选课表", "排课FK+学生FK+成绩（触发器维护人数）"),
-    ("teacher_course", "讲授关系", "教师FK+课程FK"),
-    ("grade_point_rule", "绩点规则", "成绩区间→绩点映射"),
-]
-for i, (name, cname, desc) in enumerate(tables):
-    col = i % 4
-    row = i // 4
-    x = Inches(0.5 + col * 3.15)
-    y = Inches(1.1 + row * 1.9)
-    card = add_rounded_shape(slide, x, y, Inches(2.9), Inches(1.7), C_LIGHT if row == 1 else C_WHITE)
-    card.shadow.inherit = False
-    add_accent_bar(slide, x, y + Inches(0.15), height=Inches(0.35), width=Inches(0.04), color=C_SECONDARY)
-    add_text(slide, x + Inches(0.2), y + Inches(0.1), Inches(2.5), Inches(0.35),
-             name, size=14, bold=True, color=C_PRIMARY)
-    add_text(slide, x + Inches(0.2), y + Inches(0.5), Inches(2.5), Inches(0.3),
-             cname, size=12, color=C_SECONDARY)
-    add_text(slide, x + Inches(0.2), y + Inches(0.9), Inches(2.5), Inches(0.7),
-             desc, size=11, color=C_GRAY)
-
-# 设计原则
-add_text(slide, Inches(0.5), Inches(5.3), Inches(12), Inches(0.4),
-         "设计原则：全小写+下划线命名 · utf8mb4 · InnoDB · INT自增主键 · 全部逻辑删除(is_deleted) · status与is_deleted职责分离",
-         size=12, color=C_GRAY)
-
-
-# ════════════════════════════════════════════════════════════════
-# Slide 6: 数据库对象
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "03  数据库对象 — 视图 / 触发器 / 存储过程 / 函数", size=28, bold=True, color=C_PRIMARY)
-
-# 卡片
-obj_data = [
-    ("👁️  视图 (3)", [
-        "v_student_message — 学生基本信息",
-        "v_course_plan — 选课安排列表（含选课状态）",
-        "v_enrollment — 选课详情（学生+课程+教师）",
-    ]),
-    ("⚡ 触发器 (5)", [
-        "trg_before_insert — 选课名额检查",
-        "trg_after_insert — 更新选课人数+1",
-        "trg_after_update — 退选人数-1",
-        "trg_after_insert_score — 带成绩时重算GPA",
-        "trg_after_update_score — 成绩变化重算GPA",
-    ]),
-    ("📦 存储过程 (9)", [
-        "sp_enroll / sp_unenroll — 选课/退选",
-        "sp_grade_input — 成绩录入（三重身份校验）",
-        "sp_student_roster — 班级名单含学籍分/GPA",
-        "sp_class_grade_report — 成绩统计",
-        "sp_student_semester_avg — 学期均分",
-        "sp_teacher_info / sp_teacher_list — 教师统计",
-        "sp_show_courses — 可选课程列表",
-    ]),
-    ("🔧 函数 (2)", [
-        "fn_get_student_id — 学号→学生ID",
-        "fn_get_teacher_id — 工号→教师ID",
-    ]),
-]
-
-positions = [
-    (Inches(0.5), Inches(1.1), Inches(6.0)),
-    (Inches(6.8), Inches(1.1), Inches(6.0)),
-    (Inches(0.5), Inches(3.6), Inches(6.0)),
-    (Inches(6.8), Inches(3.6), Inches(6.0)),
-]
-for (title, items), (x, y, w) in zip(obj_data, positions):
-    card = add_rounded_shape(slide, x, y, w, Inches(2.2), C_LIGHT)
-    card.shadow.inherit = False
-    add_text(slide, x + Inches(0.2), y + Inches(0.1), w - Inches(0.4), Inches(0.4),
-             title, size=15, bold=True, color=C_PRIMARY)
-    add_shape(slide, x + Inches(0.2), y + Inches(0.45), Inches(0.5), Inches(0.03), C_SECONDARY)
-    add_multi_text(slide, x + Inches(0.2), y + Inches(0.55), w - Inches(0.4), Inches(1.5),
-                   [(item, False, 12, C_DARK) for item in items], spacing=Pt(3))
-
-# GPA 公式
-add_text(slide, Inches(0.5), Inches(6.0), Inches(12), Inches(0.6),
-         "学籍分公式：weighted_score = Σ(成绩×学分) / Σ(学分)    |    GPA公式：gpa = Σ(学分×绩点) / Σ(学分)",
-         size=13, bold=True, color=C_PRIMARY, align=PP_ALIGN.CENTER)
-
-
-# ════════════════════════════════════════════════════════════════
-# Slide 7: 功能模块 — 三角色概览
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "04  功能模块 — 三角色概览", size=28, bold=True, color=C_PRIMARY)
+box(slide, Inches(0), Inches(0), Inches(0.3), Inches(7.5), C1)
+txt(slide, Inches(0.5), Inches(0.3), Inches(8), Inches(0.5), '01  系统功能总览', sz=26, bold=True, color=C1)
 
 roles = [
-    ("🎓  学  生", C_SECONDARY, [
-        "查看可选课程（过滤选课期/满员/同课异师）",
-        "选课 / 退选（触发器实时校验）",
-        "查看我的成绩（各科柱状图+学籍分/GPA）",
-        "学期均分查询（selectbox 下拉）",
-    ]),
-    ("👨‍🏫  教  师", C_ACCENT, [
-        "逐条录入成绩（Pydantic 校验）",
-        "CSV 批量导入（按行反馈结果）",
-        "查看课程学生（饼图+排行+未录入提醒）",
-    ]),
-    ("📋  教务管理员", C_PRIMARY, [
-        "数据概览（Plotly 交互式图表）",
-        "6 大实体 CRUD + 专业管理",
-        "排课管理（datetime_input 原生组件）",
-        "选课管理（按学号+学期精准查询）",
-        "班级成绩统计 / 明细 / 教师排行",
-        "备份恢复（mysqldump --routines --triggers）",
-    ]),
+    ('🎓  学  生', C2, ['可选课程查询（过滤满员/过期/同课异师）', '选课/退选（触发器实时校验+行级锁防超卖）', '我的成绩（Plotly 柱状图+学籍分/GPA）', '学期均分查询（selectbox 下拉）']),
+    ('👨‍🏫  教  师', C3, ['逐条录入成绩（Pydantic 校验）', 'CSV 批量导入（按行反馈中文结果）', '查看课程学生（饼图+排行+未录入提醒）']),
+    ('📋  教务管理员', C1, ['数据概览（Plotly 6 种图表）', '6 大实体 CRUD + 专业管理', '排课管理（datetime_input 原生组件）', '选课管理（按学号+学期精准查询）', '成绩统计/明细/教师排行/备份恢复']),
 ]
 for i, (title, color, items) in enumerate(roles):
-    x = Inches(0.5 + i * 4.2)
-    card = add_rounded_shape(slide, x, Inches(1.2), Inches(3.9), Inches(4.5), C_LIGHT)
-    card.shadow.inherit = False
-    add_shape(slide, x, Inches(1.2), Inches(3.9), Inches(0.8), color)
-    add_text(slide, x + Inches(0.2), Inches(1.3), Inches(3.5), Inches(0.6),
-             title, size=20, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
-    add_multi_text(slide, x + Inches(0.2), Inches(2.2), Inches(3.5), Inches(3.3),
-                   [(f"✓ {item}", False, 12, C_DARK) for item in items], spacing=Pt(6))
+    x = Inches(0.5+i*4.2)
+    rbox(slide, x, Inches(1.2), Inches(3.9), Inches(4.5), C4)
+    box(slide, x, Inches(1.2), Inches(3.9), Inches(0.7), color)
+    txt(slide, x+Inches(0.2), Inches(1.3), Inches(3.5), Inches(0.5), title, sz=18, bold=True, color=C5, align=PP_ALIGN.CENTER)
+    multiline(slide, x+Inches(0.2), Inches(2.1), Inches(3.5), Inches(3.5),
+              [(f'✓ {item}', False, C6) for item in items], sz=12)
 
+txt(slide, Inches(0.5), Inches(6.0), Inches(12), Inches(0.4),
+    '数据规模：20,000 学生 | 300 教师 | 329 班级 | 1,004 排课 | 2,002,688 选课 | 160+ 专业', sz=12, color=C7)
 
-# ════════════════════════════════════════════════════════════════
-# Slide 8: 特色功能
-# ════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════
+# Slide 4: 技术方案
+# ════════════════════════════════════════
 slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "04  功能亮点", size=28, bold=True, color=C_PRIMARY)
+box(slide, Inches(0), Inches(0), Inches(0.3), Inches(7.5), C1)
+txt(slide, Inches(0.5), Inches(0.3), Inches(8), Inches(0.5), '02  技术方案', sz=26, bold=True, color=C1)
+
+techs = [
+    ('🎨 表现层', C4, C1, ['Streamlit Web（22 页面）', 'Plotly 交互式图表', 'Pydantic 前端校验+max_chars']),
+    ('🧠 业务逻辑层', C4, C2, ['9 个存储过程封装业务', '5 个触发器维护数据一致性', '3 个视图简化查询']),
+    ('🗄️ 数据层', C4, C3, ['MySQL 8.0 / InnoDB', 'SQLAlchemy QueuePool 连接池', '全部逻辑删除(is_deleted)']),
+]
+for i, (title, bg_c, c, items) in enumerate(techs):
+    x = Inches(0.5+i*4.2)
+    rbox(slide, x, Inches(1.2), Inches(3.9), Inches(2.8), bg_c)
+    txt(slide, x+Inches(0.2), Inches(1.3), Inches(3.5), Inches(0.5), title, sz=16, bold=True, color=c)
+    multiline(slide, x+Inches(0.2), Inches(1.9), Inches(3.5), Inches(1.8),
+              [(f'• {item}', False, C6) for item in items], sz=13)
+
+# 六个核心库
+libs = [('Python 3.12', '编程语言'), ('MySQL 8.0', '数据库'), ('Streamlit', 'Web 框架'),
+        ('PyMySQL+Pool', '数据库驱动'), ('Plotly', '交互图表'), ('Pydantic', '数据校验')]
+for i, (n, d) in enumerate(libs):
+    x = Inches(0.5+i*2.1)
+    rbox(slide, x, Inches(4.3), Inches(1.9), Inches(1.5), C5)
+    txt(slide, x+Inches(0.1), Inches(4.5), Inches(1.7), Inches(0.4), n, sz=14, bold=True, color=C1, align=PP_ALIGN.CENTER)
+    txt(slide, x+Inches(0.1), Inches(5.0), Inches(1.7), Inches(0.4), d, sz=11, color=C7, align=PP_ALIGN.CENTER)
+
+# ════════════════════════════════════════
+# Slides 5-9: 问题与解决方案
+# ════════════════════════════════════════
+
+# Slide 5: 排序规则冲突
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+slide_problem(slide, '03  问题：MySQL 排序规则冲突（报错 1267）',
+    'MySQL 8.0 默认排序规则 utf8mb4_0900_ai_ci 与数据库的 utf8mb4_unicode_ci 不兼容，\n存储过程中字符串比较时报错 1267「Illegal mix of collations」，所有涉及字符串查询的功能全部崩溃。',
+    [('💡 思路', '找到冲突根因，在连接层和查询层双重统一排序规则'),
+     ('🔧 方法', 'pymysql 连接参数指定 collation + 存储过程显式加 COLLATE 子句'),
+     ('🛠️ 手段', '①DB_URL 加 collation=utf8mb4_unicode_ci ②SP/fn 中字符串比较后加 COLLATE utf8mb4_unicode_ci'),
+     ('✅ 成效', '1267 错误完全清零，所有存储过程正常运行')])
+
+# Slide 6: 并发选课超卖 → FOR UPDATE
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+slide_problem(slide, '04  问题：最后一个名额同时被多人选走（并发超卖）',
+    '两个学生同时选最后一门课（current=29, max=30），两个事务同时读到 current=29，\n都认为有名额而 INSERT 成功，最终变成 31/30 的数据不一致。',
+    [('💡 思路', '让第二个事务等待，读取到最新的 current 值再做判断'),
+     ('🔧 方法', '触发器中使用 SELECT ... FOR UPDATE 加排他行锁'),
+     ('🛠️ 手段', 'trg_enrollment_before_insert 中加 FOR UPDATE，学生 B 等待直到学生 A COMMIT'),
+     ('✅ 成效', 'A 选上最后一个名额，B 收到「选课已满！当前 30/30」异常并 ROLLBACK')])
+
+# Slide 7: 200万数据导入
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+slide_problem(slide, '05  问题：200 万条选课数据导入太慢',
+    '200 万条选课 + 5 个触发器，逐条 INSERT + 触发逻辑，预计需要数小时。\n触发器每次都会执行 FOR UPDATE 锁、人数更新和 GPA 重算，200 万×5 次 = 1000 万次触发。',
+    [('💡 思路', '先删触发器 → 批量导入 → 手动一次重算，避免逐行触发'),
+     ('🔧 方法', 'LOAD DATA LOCAL INFILE（比 INSERT 快 20 倍）+ Python 批量 GPA UPDATE'),
+     ('🛠️ 手段', '①Python 预删 5 个触发器 ②LOAD DATA INFILE 导入 CSV ③UPDATE 一次性重算全部学生 GPA ④Python 重建触发器'),
+     ('✅ 成效', '导入时间从数小时降至约 30 秒，200 万条 + 20000 人 GPA 重算全部完成')])
+
+# Slide 8: 页面卡顿 → 按学号+学期查询
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+slide_problem(slide, '06  问题：200 万条数据全量加载导致页面卡顿',
+    '选课管理页面加载全部 200 万条选课记录，Python 内存消耗巨大、Streamlit 渲染超时、\n下拉退选框 200 万选项浏览器直接卡死。',
+    [('💡 思路', '用户只需要查特定学生的选课，不要全部加载'),
+     ('🔧 方法', '改成按学期+学号精准查询，退改用输入 ID'),
+     ('🛠️ 手段', '①学期 selectbox（轻量 DISTINCT 查询）②输入学号查该生该学期选课 ③退选输入选课 ID'),
+     ('✅ 成效', '每次查询只返回几行结果，页面秒开，零延迟')])
+
+# Slide 9: 输入校验 → Pydantic
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+slide_problem(slide, '07  问题：表单无校验导致脏数据入库',
+    '用户可输入任意非法数据：成绩填 abc、学号填 999999999999、排课上限填超出 INT 范围的超大数字。\n部分数据到 SQL 层才报错，用户体验差且数据库有风险。',
+    [('💡 思路', '在 Streamlit 前端和后端存储过程之间增加一层统一的输入校验'),
+     ('🔧 方法', 'Pydantic 模型 + validate_or_error 统一函数 + 前端 max_chars 截断'),
+     ('🛠️ 手段', '①创建 StudentCreate/TeacherCreate/GradeRecord 等校验模型 ②学号/工号/成绩格式校验 ③text_input 配置 max_chars ④st.toast 中文错误提示'),
+     ('✅ 成效', '脏数据零入库，非法输入在前端被拦截并显示中文报错')])
+
+# Slide 10: JS精度 → text_input + max_chars
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+slide_problem(slide, '08  问题：JavaScript 精度丢失导致校验被绕过',
+    '排课上限用 st.number_input，底层依赖 JS Number（64 位浮点）。\n输入 46 位超大数字时超出 JS 安全整数范围（2^53），JS 静默截断→Python 收到正常值→校验通过→SQL 爆掉。',
+    [('💡 思路', '绕过 JS Number，用 text_input（字符串）传值，Python 端手动 int() 转换'),
+     ('🔧 方法', 'text_input + max_chars=5（最多 5 位数字 0~99999）+ 后端 int() + >99999 检查'),
+     ('🛠️ 手段', '①排课上限改为 text_input(max_chars=5) ②按钮中 int(max_s) ③max_s > 99999 拦截'),
+     ('✅ 成效', '不管用户输入多少位数字，最多输入 5 位，JS 精度问题彻底解决')])
+
+# ════════════════════════════════════════
+# Slide 11: 项目特色
+# ════════════════════════════════════════
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+box(slide, Inches(0), Inches(0), Inches(0.3), Inches(7.5), C1)
+txt(slide, Inches(0.5), Inches(0.3), Inches(8), Inches(0.5), '09  项目特色', sz=26, bold=True, color=C1)
 
 features = [
-    ("🎨 交互式图表", "Plotly 饼图/柱状图展示\n成绩分布、教师排行、\n数据概览，悬停显示明细"),
-    ("✅ Pydantic 校验", "全表单 Pydantic 模型校验 +\ntext_input max_chars 前端截断，\n中文 toast 错误提示"),
-    ("🔑 快速选择登录", "从数据库读取活跃账号，\n下拉自动填充，测试零门槛"),
-    ("🏫 班级名自动生成", "年级+专业 selectbox 下拉，\n系统自动查询序号生成班级名\n{年级}{专业}{序号}班"),
-    ("📁 专业管理", "专业列表 CSV 存储，支持\n增删操作，班级管理联动\n删除前检查班级引用"),
-    ("📊 大数据量支持", "LOAD DATA INFILE 极速导入\n200 万选课 + 自动重算 GPA\n删触发器+批量UPDATE优化"),
+    ('🎯 双界面交付', 'CLI + Streamlit Web 双模式运行，\n同一套业务函数复用，代码零冗余'),
+    ('🔒 并发安全', 'FOR UPDATE 行级锁 + 事务 + \nUNIQUE 索引三层防护防超卖'),
+    ('🚀 大数据量', '200 万选课 30 秒导入，\nLOAD DATA + 删触发器 + 批量 GPA'),
+    ('✅ 输入校验', 'Pydantic 全表单校验 +\nst.toast 中文提示 + max_chars 截断'),
+    ('📊 交互图表', 'Plotly 饼图/柱状图 10+ 处，\n成绩分布/教师排行一目了然'),
+    ('🤖 AI 辅助', 'Claude Code 全流程辅助，\n人工逐行审核+80+次 Git 提交'),
 ]
-for i, (title, desc) in enumerate(features):
-    col = i % 3
-    row = i // 3
-    x = Inches(0.5 + col * 4.2)
-    y = Inches(1.1 + row * 3.0)
-    card = add_rounded_shape(slide, x, y, Inches(3.9), Inches(2.7), C_WHITE)
-    card.shadow.inherit = False
-    add_shape(slide, x, y, Inches(3.9), Inches(0.6), C_SECONDARY)
-    add_text(slide, x + Inches(0.2), y + Inches(0.08), Inches(3.5), Inches(0.45),
-             title, size=16, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
-    add_text(slide, x + Inches(0.2), y + Inches(0.8), Inches(3.5), Inches(1.7),
-             desc, size=12, color=C_DARK)
+for i, (t, d) in enumerate(features):
+    x = Inches(0.5+(i%3)*4.2)
+    y = Inches(1.1+(i//3)*3.0)
+    rbox(slide, x, y, Inches(3.9), Inches(2.7), C4)
+    txt(slide, x+Inches(0.2), y+Inches(0.15), Inches(3.5), Inches(0.4), t, sz=16, bold=True, color=C1)
+    txt(slide, x+Inches(0.2), y+Inches(0.7), Inches(3.5), Inches(1.8), d, sz=12, color=C6)
 
-
-# ════════════════════════════════════════════════════════════════
-# Slide 9: 数据规模与性能
-# ════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════
+# Slide 12: 设计总结与不足
+# ════════════════════════════════════════
 slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "04  数据规模与性能优化", size=28, bold=True, color=C_PRIMARY)
+box(slide, Inches(0), Inches(0), Inches(0.3), Inches(7.5), C1)
+txt(slide, Inches(0.5), Inches(0.3), Inches(8), Inches(0.5), '10  设计总结与不足', sz=26, bold=True, color=C1)
 
-# 数据规模表
-data_rows = [
-    ("班级", "329 个", "24 → 329", "50 专业 × 3 年级 × 2~3 班"),
-    ("教师", "300 人", "25 → 300", "新增 275 位仿真教师"),
-    ("学生", "20,000 人", "1,000 → 20,000", "每班约 60 人"),
-    ("排课", "1,004 条", "54 → 1,004", "覆盖 20 年 40 个学期"),
-    ("选课", "2,002,688 条", "2,990 → 200 万", "25% 未录入成绩"),
+# 总结
+rbox(slide, Inches(0.5), Inches(1.1), Inches(6.0), Inches(4.0), C4)
+txt(slide, Inches(0.7), Inches(1.2), Inches(5.5), Inches(0.4), '✅ 设计总结', sz=18, bold=True, color=C3)
+summary = [
+    '数据库：8 表 · 3 视图 · 5 触发器 · 9 存储过程 · 2 函数',
+    '应用层：CLI + Streamlit 双界面 · 22 个 Web 页面',
+    '校验层：Pydantic 全表单校验 · Plotly 交互图表',
+    '并发：FOR UPDATE 行锁 · 事务机制 · 唯一索引三层防护',
+    '数据：20,000 学生 · 300 教师 · 200 万选课 · 30 秒导入',
+    '版本：Git 80+ 次提交 · GitHub 托管 · AI 全程辅助',
 ]
+multiline(slide, Inches(0.7), Inches(1.7), Inches(5.5), Inches(3.2),
+          [(f'• {item}', False, C6) for item in summary], sz=12)
 
-# 表头背景
-add_shape(slide, Inches(0.5), Inches(1.1), Inches(7.0), Inches(0.45), C_PRIMARY)
-
-cols_def = [(Inches(0.7), Inches(1.2), "实体"),
-            (Inches(2.0), Inches(1.5), "当前规模"),
-            (Inches(3.6), Inches(1.7), "扩增倍数"),
-            (Inches(5.4), Inches(2.0), "说明")]
-for x, w, hdr in cols_def:
-    add_text(slide, x, Inches(1.2), w, Inches(0.35), hdr, size=13, bold=True, color=C_WHITE)
-
-for i, (name, count, ratio, note) in enumerate(data_rows):
-    y = Inches(1.65 + i * 0.48)
-    bg = add_shape(slide, Inches(0.5), y, Inches(7.0), Inches(0.45),
-                   C_LIGHT if i % 2 == 0 else C_WHITE)
-    add_text(slide, Inches(0.7), y + Inches(0.03), Inches(1.2), Inches(0.35),
-             name, size=13, bold=True, color=C_PRIMARY)
-    add_text(slide, Inches(2.0), y + Inches(0.03), Inches(1.5), Inches(0.35),
-             count, size=13, color=C_DARK)
-    add_text(slide, Inches(3.6), y + Inches(0.03), Inches(1.7), Inches(0.35),
-             ratio, size=13, color=C_SECONDARY)
-    add_text(slide, Inches(5.4), y + Inches(0.03), Inches(2.0), Inches(0.35),
-             note, size=11, color=C_GRAY)
-
-# 优化方案
-opt_items = [
-    ("索引优化", "enrollment 表 (offering_id, student_id, is_deleted)  联合索引减少回表"),
-    ("导入优化", "LOAD DATA LOCAL INFILE 20×加速 + 删触发器 + 唯一键检查关闭"),
-    ("GPA 重算", "2,002,688 条选课→一次性批量 UPDATE × 20,000 学生，替代逐行触发"),
-    ("查询优化", "选课管理改为按学号+学期精准查询，避免 200 万条全量加载"),
+# 不足
+rbox(slide, Inches(6.8), Inches(1.1), Inches(6.0), Inches(4.0), RGBColor(0xFD, 0xED, 0xED))
+txt(slide, Inches(7.0), Inches(1.2), Inches(5.5), Inches(0.4), '⚠️ 存在不足', sz=18, bold=True, color=C8)
+limits = [
+    '缺少自动化单元测试和 CI/CD 流水线',
+    '未实现 Redis 缓存和读写分离',
+    '物理设计可进一步系统化 EXPLAIN 分析',
+    'AI 对 Streamlit 组件行为理解不深入，st.form 迭代 3 轮',
+    '大数据量下部分页面查询仍需优化',
 ]
-for i, (title, desc) in enumerate(opt_items):
-    x = Inches(0.5) if i < 2 else Inches(0.5)
-    y = Inches(4.6 + (i % 2) * 1.1 + (0 if i < 2 else 0))
-    # 如果是i>=2，应该是第2行
-    if i >= 2:
-        y = Inches(4.6 + (i % 2) * 1.1)
+multiline(slide, Inches(7.0), Inches(1.7), Inches(5.5), Inches(3.2),
+          [(f'• {item}', False, C6) for item in limits], sz=12)
 
-# 重新布局
-opt_positions = [
-    (Inches(0.5), Inches(4.5)),
-    (Inches(6.7), Inches(4.5)),
-    (Inches(0.5), Inches(5.7)),
-    (Inches(6.7), Inches(5.7)),
-]
-for (title, desc), (x, y) in zip(opt_items, opt_positions):
-    card = add_rounded_shape(slide, x, y, Inches(6.0), Inches(1.0), C_WHITE)
-    card.shadow.inherit = False
-    add_accent_bar(slide, x, y + Inches(0.15), height=Inches(0.7), width=Inches(0.04), color=C_ACCENT)
-    add_text(slide, x + Inches(0.2), y + Inches(0.05), Inches(5.5), Inches(0.35),
-             title, size=14, bold=True, color=C_PRIMARY)
-    add_text(slide, x + Inches(0.2), y + Inches(0.4), Inches(5.5), Inches(0.5),
-             desc, size=11, color=C_DARK)
+# 致谢
+box(slide, Inches(0.5), Inches(5.5), Inches(12.3), Inches(0.06), C2)
+txt(slide, Inches(0.5), Inches(5.8), Inches(12.3), Inches(0.6),
+    '谢谢老师！请各位老师批评指正 🙏   课程设计只是起点，工程化思维才是真正的收获', sz=16, bold=True, color=C1, align=PP_ALIGN.CENTER)
 
-
-# ════════════════════════════════════════════════════════════════
-# Slide 10: AI 辅助开发
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_accent_bar(slide, Inches(0.4), Inches(0.35))
-add_text(slide, Inches(0.6), Inches(0.3), Inches(6), Inches(0.6),
-         "05  AI 辅助开发记录", size=28, bold=True, color=C_PRIMARY)
-
-# 双栏布局
-left_items = [
-    ("✅ AI 有效应用", C_ACCENT, [
-        "DDL/SQL 代码生成（快 70%）",
-        "CRUD 重复代码（快 80%）",
-        "Bug 定位（排序规则冲突等）",
-        "代码重构（tester.py 175→83 行）",
-        "文档生成（说明书初稿）",
-    ]),
-    ("⚠️ 人工修正记录", C_PRIMARY, [
-        "sp_enroll 未检查同课异师 → 新增第4步校验",
-        "1267 collation 冲突 → 统一 utf8mb4_unicode_ci",
-        "st.tabs+st.form 组件干扰 → 改为 st.button",
-        "备份缺少 routines/triggers → 新增参数",
-    ]),
-]
-for i, (title, clr, items) in enumerate(left_items):
-    x = Inches(0.5 + i * 6.3)
-    card = add_rounded_shape(slide, x, Inches(1.0), Inches(6.0), Inches(3.0), C_LIGHT)
-    card.shadow.inherit = False
-    add_shape(slide, x, Inches(1.0), Inches(6.0), Inches(0.55), clr)
-    add_text(slide, x + Inches(0.2), Inches(1.05), Inches(5.5), Inches(0.45),
-             title, size=16, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
-    add_multi_text(slide, x + Inches(0.2), Inches(1.7), Inches(5.5), Inches(2.1),
-                   [(f"• {item}", False, 12, C_DARK) for item in items], spacing=Pt(5))
-
-# 反思区域
-add_text(slide, Inches(0.5), Inches(4.3), Inches(12), Inches(0.4),
-         "💡 反思与总结", size=18, bold=True, color=C_PRIMARY)
-
-reflections = [
-    ("AI 是强大的辅助工具", "核心设计决策（ER建模、范式、索引）必须由人工主导，AI仅提供建议"),
-    ("提示词决定输出质量", "明确指定数据库对象类型（触发器/存储过程/视图）可获得更准确的代码"),
-    ("人工审核不可替代", "AI对 Streamlit 组件行为理解不够深入，st.form/st.tabs 方案经历了 3 轮迭代"),
-]
-for i, (title, desc) in enumerate(reflections):
-    y = Inches(4.8 + i * 0.7)
-    add_accent_bar(slide, Inches(0.5), y, width=Inches(0.04), height=Inches(0.5), color=C_SECONDARY)
-    add_text(slide, Inches(0.7), y, Inches(2.5), Inches(0.4),
-             title, size=13, bold=True, color=C_PRIMARY)
-    add_text(slide, Inches(3.2), y, Inches(9.5), Inches(0.5),
-             desc, size=12, color=C_DARK)
-
-
-# ════════════════════════════════════════════════════════════════
-# Slide 11: 总结
-# ════════════════════════════════════════════════════════════════
-slide = prs.slides.add_slide(prs.slide_layouts[6])
-add_bg(slide, C_PRIMARY)
-add_shape(slide, Inches(0), Inches(0), Inches(13.33), Inches(0.06), C_ACCENT)
-add_shape(slide, Inches(0), Inches(7.44), Inches(13.33), Inches(0.06), C_ACCENT)
-
-add_text(slide, Inches(1), Inches(0.8), Inches(11.33), Inches(0.8),
-         "06  总  结", size=36, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
-add_shape(slide, Inches(5.5), Inches(1.5), Inches(2.33), Inches(0.04), C_ACCENT)
-
-summary_items = [
-    ("📐 数据库设计", "8 表 · 3 视图 · 5 触发器 · 9 存储过程 · 2 函数"),
-    ("💻 应用实现", "CLI + Streamlit 双界面，22 个 Web 页面"),
-    ("📊 数据规模", "20,000 学生 · 300 教师 · 200 万选课记录"),
-    ("🤖 AI 辅助", "Claude Code 全流程辅助，人工审核逐行把关"),
-    ("🔧 代码质量", "Pydantic 校验 · Plotly 图表 · 连接池 · 逻辑删除"),
-]
-
-for i, (icon_title, desc) in enumerate(summary_items):
-    y = Inches(2.0 + i * 0.85)
-    add_text(slide, Inches(2), y, Inches(9.33), Inches(0.5),
-             icon_title, size=18, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
-    add_text(slide, Inches(2), y + Inches(0.4), Inches(9.33), Inches(0.4),
-             desc, size=14, color=RGBColor(0x85, 0xC1, 0xE9), align=PP_ALIGN.CENTER)
-
-add_text(slide, Inches(1), Inches(6.5), Inches(11.33), Inches(0.5),
-         "谢谢老师！请各位老师批评指正 🙏", size=20, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
-
-
-
-
-# ── 保存 ──
-output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           "数据库系统课程设计_答辩PPT.pptx")
-prs.save(output_path)
-print(f"✅ PPT 已保存到: {output_path}")
+# ══ 保存 ══
+out = os.path.join(os.path.dirname(os.path.abspath(__file__)), '3.4答辩PPT.pptx')
+prs.save(out)
+sz = os.path.getsize(out)//1024
+print(f'OK: {sz} KB -> {out}')
